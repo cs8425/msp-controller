@@ -48,8 +48,9 @@ body {
 
 .control-gimbal {
     position: relative;
-	height: 90%;
-	padding-right: calc((80vh - 10px ) * 0.9);
+	height: calc((80vh - 10px ) * 0.9);
+	width: calc((80vh - 10px ) * 0.9);
+/*	padding-right: calc((80vh - 10px ) * 0.9);*/
     background-color: #eee;
     margin-left: 1em;
     margin-right: 1em;

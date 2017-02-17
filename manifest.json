@@ -9,8 +9,6 @@
 
     "offline_enabled": true,
 
-    "default_locale": "en",
-
     "app": {
         "background": {
             "scripts": ["eventPage.js"],

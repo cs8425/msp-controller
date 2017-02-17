@@ -4,21 +4,34 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<meta name="author" content="cs8425"/>
 	<meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'"> <!-- TODO: more specific -->
+	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
 	<link type="text/css" rel="stylesheet" href="./index.css" media="all" />
 	<script type="text/javascript" src="./js/lib/jquery-3.1.1.slim.min.js"></script>
 	<script type="text/javascript" src="./js/injected_methods.js"></script>
 	<script type="text/javascript" src="./js/serial.js"></script>
-	<script type="text/javascript" src="./js/serial_backend.js"></script>
 	<script type="text/javascript" src="./js/msp/MSPCodes.js"></script>
 	<script type="text/javascript" src="./js/msp.js"></script>
 	<script type="text/javascript" src="./js/msp/MSPHelper.js"></script>
+	<script type="text/javascript" src="./js/fc.js"></script>
 	<script type="text/javascript" src="./index.js"></script>
 	<title></title>
 </head>
 <body>
 <div id="table">
 	<div class="headerbar">
-	Center Caption
+            <div id="quad-status_wrapper">
+                <div class="battery-icon">
+                    <div class="quad-status-contents">
+                        <div class="battery-status"></div>
+                    </div>
+                </div>
+                <div class="battery-legend">Battery voltage</div>
+                <div class="bottomStatusIcons">
+                    <div class="armedicon cf_tip" i18n_title="mainHelpArmed"></div>
+                    <div class="failsafeicon cf_tip" i18n_title="mainHelpFailsafe"></div>
+                    <div class="linkicon cf_tip" i18n_title="mainHelpLink"></div>
+                </div>
+            </div>
 	</div>
 	<div class="group">
 		<div class="row content">
@@ -26,14 +39,14 @@
 				<div class="control-gimbal left">
 					<span class="gimbal-label gimbal-label-vert"></span> <span class="gimbal-label gimbal-label-horz"></span>
 					<span class="crosshair crosshair-vert"></span> <span class="crosshair crosshair-horz"></span>
-					<div class="control-stick"></div>
+					<div class="control-stick left"></div>
 				</div>
 			</div>
 			<div class="cell right">
 				<div class="control-gimbal right">
 					<span class="gimbal-label gimbal-label-vert"></span> <span class="gimbal-label gimbal-label-horz"></span>
 					<span class="crosshair crosshair-vert"></span> <span class="crosshair crosshair-horz"></span>
-					<div class="control-stick"></div>
+					<div class="control-stick right"></div>
 				</div>
 			</div>
 		</div>
