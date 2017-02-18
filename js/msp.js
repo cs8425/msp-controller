@@ -25,129 +25,132 @@ var MSP = {
     timeout:                    1000,
     
     read: function (readInfo) {
+        var self = this;
         var data = new Uint8Array(readInfo.data);
 
         for (var i = 0; i < data.length; i++) {
-            switch (this.state) {
+            switch (self.state) {
                 case 0: // sync char 1
                     if (data[i] == 36) { // $
-                        this.state++;
+                        self.state++;
                     }
                     break;
                 case 1: // sync char 2
                     if (data[i] == 77) { // M
-                        this.state++;
+                        self.state++;
                     } else { // restart and try again
-                        this.state = 0;
+                        self.state = 0;
                     }
                     break;
                 case 2: // direction (should be >)
-                    this.unsupported = 0;
+                    self.unsupported = 0;
                     if (data[i] == 62) { // >
-                        this.message_direction = 1;
+                        self.message_direction = 1;
                     } else if (data[i] == 60) { // <
-                        this.message_direction = 0;
+                        self.message_direction = 0;
                     } else if (data[i] == 33) { // !
                         // FC reports unsupported message error
-                        this.unsupported = 1;
+                        self.unsupported = 1;
                     }
 
-                    this.state++;
+                    self.state++;
                     break;
                 case 3:
-                    this.message_length_expected = data[i];
-                    if (this.message_length_expected === this.JUMBO_FRAME_SIZE_LIMIT) {
-                        this.messageIsJumboFrame = true;
+                    self.message_length_expected = data[i];
+                    if (self.message_length_expected === self.JUMBO_FRAME_SIZE_LIMIT) {
+                        self.messageIsJumboFrame = true;
                     }
 
-                    this.message_checksum = data[i];
+                    self.message_checksum = data[i];
 
-                    this.state++;
+                    self.state++;
                     break;
                 case 4:
-                    this.code = data[i];
-                    this.message_checksum ^= data[i];
+                    self.code = data[i];
+                    self.message_checksum ^= data[i];
 
-                    if (this.message_length_expected > 0) {
+                    if (self.message_length_expected > 0) {
                         // process payload
-                        if (this.messageIsJumboFrame) {
-                            this.state++;
+                        if (self.messageIsJumboFrame) {
+                            self.state++;
                         } else {
-                            this.state = this.state + 3;
+                            self.state = self.state + 3;
                         }
                     } else {
                         // no payload
-                        this.state += 5;
+                        self.state += 5;
                     }
                     break;
                 case 5:
-                    this.message_length_expected = data[i];
+                    self.message_length_expected = data[i];
 
-                    this.message_checksum ^= data[i];
+                    self.message_checksum ^= data[i];
 
-                    this.state++;
+                    self.state++;
 
                     break;
                 case 6:
-                    this.message_length_expected = this.message_length_expected  + 256 * data[i];
+                    self.message_length_expected = self.message_length_expected  + 256 * data[i];
 
-                    this.message_checksum ^= data[i];
+                    self.message_checksum ^= data[i];
 
-                    this.state++;
+                    self.state++;
 
                     break;
                 case 7:
                     // setup arraybuffer
-                    this.message_buffer = new ArrayBuffer(this.message_length_expected);
-                    this.message_buffer_uint8_view = new Uint8Array(this.message_buffer);
+                    self.message_buffer = new ArrayBuffer(self.message_length_expected);
+                    self.message_buffer_uint8_view = new Uint8Array(self.message_buffer);
 
-                    this.state++;
+                    self.state++;
                 case 8: // payload
-                    this.message_buffer_uint8_view[this.message_length_received] = data[i];
-                    this.message_checksum ^= data[i];
-                    this.message_length_received++;
+                    self.message_buffer_uint8_view[self.message_length_received] = data[i];
+                    self.message_checksum ^= data[i];
+                    self.message_length_received++;
 
-                    if (this.message_length_received >= this.message_length_expected) {
-                        this.state++;
+                    if (self.message_length_received >= self.message_length_expected) {
+                        self.state++;
                     }
                     break;
                 case 9:
-                    if (this.message_checksum == data[i]) {
+                    if (self.message_checksum == data[i]) {
                         // message received, store dataview
-                        this.dataView = new DataView(this.message_buffer, 0, this.message_length_expected);
+                        self.dataView = new DataView(self.message_buffer, 0, self.message_length_expected);
                     } else {
-                        console.log('code: ' + this.code + ' - crc failed');
-                        this.packet_error++;
-                        this.crcError = true;
-                        this.dataView = new DataView(new ArrayBuffer(0));
+                        console.log('code: ' + self.code + ' - crc failed');
+                        self.packet_error++;
+                        self.crcError = true;
+                        self.dataView = new DataView(new ArrayBuffer(0));
                     }
                     // Reset variables
-                    this.message_length_received = 0;
-                    this.state = 0;
-                    this.messageIsJumboFrame = false;
-                    this.notify();
-                    this.crcError = false;
+                    self.message_length_received = 0;
+                    self.state = 0;
+                    self.messageIsJumboFrame = false;
+                    self.notify();
+                    self.crcError = false;
                     break;
 
                 default:
-                    console.log('Unknown state detected: ' + this.state);
+                    console.log('Unknown state detected: ' + self.state);
             }
         }
-        this.last_received_timestamp = Date.now();
+        self.last_received_timestamp = Date.now();
     },
     notify: function() {
         var self = this;
-        this.listeners.forEach(function(listener) {
+        self.listeners.forEach(function(listener) {
             listener(self);
         });
     },
     listen: function(listener) {
-        if (this.listeners.indexOf(listener) == -1) {
-            this.listeners.push(listener);
+        var self = this;
+        if (self.listeners.indexOf(listener) == -1) {
+            self.listeners.push(listener);
         }
     },
     clearListeners: function() {
-        this.listeners = [];  
+        var self = this;
+        self.listeners = [];
     },
     send_message: function (code, data, callback_sent, callback_msp, callback_onerror) {
         var self = this;
@@ -238,16 +241,18 @@ var MSP = {
       });
     },
     callbacks_cleanup: function () {
-        for (var i = 0; i < this.callbacks.length; i++) {
-            clearInterval(this.callbacks[i].timer);
+        var self = this;
+        for (var i = 0; i < self.callbacks.length; i++) {
+            clearInterval(self.callbacks[i].timer);
         }
 
-        this.callbacks = [];
+        self.callbacks = [];
     },
     disconnect_cleanup: function () {
-        this.state = 0; // reset packet state for "clean" initial entry (this is only required if user hot-disconnects)
-        this.packet_error = 0; // reset CRC packet error counter for next session
+        var self = this;
+        self.state = 0; // reset packet state for "clean" initial entry (this is only required if user hot-disconnects)
+        self.packet_error = 0; // reset CRC packet error counter for next session
 
-        this.callbacks_cleanup();
+        self.callbacks_cleanup();
     }
 };

@@ -48,8 +48,8 @@ body {
 
 .control-gimbal {
     position: relative;
-	height: calc((80vh - 10px ) * 0.9);
-	width: calc((80vh - 10px ) * 0.9);
+	height: calc((80vh - 10px ) * 0.8);
+	width: calc((80vh - 10px ) * 0.8);
 /*	padding-right: calc((80vh - 10px ) * 0.9);*/
     background-color: #eee;
     margin-left: 1em;
@@ -131,44 +131,155 @@ body {
     left: -65px;
 }
 
-a {
-    text-decoration: none;
-    color: #000;
-    font-family: 'open_sanssemibold', Arial;
+button {
+	background-color: #4CAF50;
+	color: white;
+	padding: 14px 20px;
+	margin: 8px 0;
+	border: none;
+	cursor: pointer;
 }
 
-a:hover {
-    text-decoration: none;
+/* Battery element styling*/
+.quad-status-contents  {
+    display: none;
+    margin-top: 10px;
+    margin-left: 14px;
+    height: 10px;
+    width: 30px;
+    /* width: 30px; */    
 }
 
-.button-enable a {
-    /*  common styles for content toolbar buttons */
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: 0px;
+.quad-status-contents progress::-webkit-progress-bar {
+    height: 12px;
+    background-color: #eee;
+}
+
+.quad-status-contents progress::-webkit-progress-value {
+    background-color: #bcf;
+}
+
+.battery-status {
+    height: 11px;
+    position: relative;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.20);
+    border-radius: 0px;
     background-color: #ffbb00;
-    border-radius: 3px;
-    border: 1px solid #4c8829;
-    color: #fff;
-    float: left;
-    font-family: 'open_sansbold', Arial;
-    font-size: 12px;
-    text-shadow: 0px 1px rgba(0, 0, 0, 0.25);
-    display: block;
-    cursor: pointer;
-    transition: all ease 0.2s;
-    padding: 0px;
-    padding-left: 9px;
-    padding-right: 9px;
-    line-height: 28px;
+    /* border-radius: 4px; */
+    margin-top: 0px;
 }
 
-.button-enable a:hover {
-    background-color: #6ac435;
-    transition: all ease 0.2s;
+.battery-icon {
+    background-image: url(images/icons/cf_icon_bat_grey.svg);
+    background-size: contain;
+    background-position: center;
+    display: inline-block;
+    height: 30px;
+    width: 60px;
+    transition: none;
+    margin-top: 4px;
+    background-repeat: no-repeat;
 }
-.button-enable a:active {
-    background-color: #4d9324;
-    transition: all ease 0.0s;
-    box-shadow: inset 0px 1px 5px rgba(0, 0, 0, 0.35);
+
+.armedicon,
+.failsafeicon,
+.linkicon,
+.configicon,
+.rxicon {
+	float: left;
+	margin-left: 4px;
+	margin-right: 4px;
+	margin-top: 6px;
+	margin-bottom: 6px;
+	display: block;
+	opacity: 0.8;
+	background-size: contain;
+	background-position: center;
+	transition: none;  
+	min-height: 18px;
+	min-width: 18px;
+	width: calc(20vh - 22px);
+	height: calc(20vh - 22px);
 }
+
+.armedicon {
+	background-image: url(images/icons/cf_icon_armed_grey.svg);
+}
+.failsafeicon {
+	background-image: url(images/icons/cf_icon_failsafe_grey.svg);
+}
+ 
+.linkicon {
+	background-image: url(images/icons/cf_icon_link_grey.svg);
+}
+
+.configicon {
+	background-image: url(images/icons/cf_icon_config_grey.svg);
+	float: right;
+}
+
+.rxicon {
+	background-image: url(images/icons/cf_icon_rx_grey.svg);
+}
+
+.rxicon.active {
+	background-image: url(images/icons/cf_icon_rx_active.svg);
+}
+
+.bottomStatusIcons {
+	background-color: #272727;
+/*    height: 31px;
+    margin-top: 2px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;*/
+	height: 100%;
+	margin: 2px;
+	border-radius: 5px;
+}
+
+/* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#connectUrl {
+	width: 70%;
+	font-size: 16px; /* Increase font-size */
+	padding: 12px 16px 12px 16px; /* Add some padding */
+	border: 1px solid #ddd; /* Add a grey border */
+}
+
+

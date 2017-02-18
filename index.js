@@ -4,13 +4,14 @@ var
     CHANNEL_MIN_VALUE = 1000,
     CHANNEL_MID_VALUE = 1500,
     CHANNEL_MAX_VALUE = 2000,
-    
+
+	// TREA1234
     // What's the index of each channel in the MSP channel list?
     channelMSPIndexes = {
-        roll: 0,
-        pitch: 1,
-        yaw: 2,
-        throttle: 3,
+        A: 3,
+        E: 2,
+        R: 1,
+        T: 0,
         aux1: 4,
         aux2: 5,
         aux3: 6,
@@ -18,7 +19,7 @@ var
     },
     
     // Set reasonable initial stick positions (Mode 2)
-    stickValues = {
+/*    stickValues = {
         throttle: CHANNEL_MIN_VALUE,
         pitch: CHANNEL_MID_VALUE,
         roll: CHANNEL_MID_VALUE,
@@ -27,18 +28,39 @@ var
         aux2: CHANNEL_MIN_VALUE,
         aux3: CHANNEL_MIN_VALUE,
         aux4: CHANNEL_MIN_VALUE
+    },*/
+    stickValues = {
+        T: CHANNEL_MIN_VALUE,
+        E: CHANNEL_MID_VALUE,
+        A: CHANNEL_MID_VALUE,
+        R: CHANNEL_MID_VALUE,
+        aux1: CHANNEL_MIN_VALUE,
+        aux2: CHANNEL_MIN_VALUE,
+        aux3: CHANNEL_MIN_VALUE,
+        aux4: CHANNEL_MIN_VALUE
     },
     
     // First the vertical axis, then the horizontal:
-    gimbals = [
+/*    gimbals = [
         ["throttle", "yaw"],
         ["pitch", "roll"],
+    ],*/
+    gimbals = [
+        ["T", "R"],
+        ["E", "A"],
     ],
     
     enableTX = false;
 
 var gimbalElems = null;
 var gimbalSize = null;
+
+
+var mspHelper;
+var STATUS = {
+	connecting: false,
+	connected: false,
+}
 
 $(document).ready(function() {
 
@@ -60,10 +82,51 @@ $(document).ready(function() {
 	}
 
 	updateUI()
+
+	$('#connectModal span.close').on('click', function(e){
+		$('#connectModal').hide()
+	})
+	$('#rxicon').on('click', function(e){
+		$('#connectModal').show()
+	})
+	$(document).on('click', function(e){
+//		console.log(e.target, $(e.target).hasClass('modal'))
+		var target = $(e.target)
+		if(target.hasClass('modal')){
+			target.hide()
+		}
+	})
+	$('#connectUrl').val('tcp://192.168.4.1:2323')
+	$('#connectBtn').on('click', function(e){
+		if(!STATUS.connected){
+			if(!STATUS.connecting){
+				var url = $('#connectUrl').val()
+				console.log('connectBtn', url)
+				STATUS.connecting = true
+				STATUS.connected = false
+				serial.connect(url, {bitrate: 115200}, onOpen)
+				return
+			}
+		}
+		serial.disconnect(onClosed);
+	})
+
 })
 
 function updateUI() {
 	updateControlPositions()
+
+	var active = ((Date.now() - STATUS.last_received_timestamp) < 300);
+	if(active){
+		$(".linkicon").css({
+			'background-image': 'url(images/icons/cf_icon_link_active.svg)'
+		});
+	}else{
+		$(".linkicon").css({
+			'background-image': 'url(images/icons/cf_icon_link_grey.svg)'
+		});
+	}
+
 	window.requestAnimationFrame(updateUI)
 }
 
@@ -75,11 +138,9 @@ function handleGimbalDrag(e) {
 	var gimbalSize = gimbal.height()
 	var pageX = e.pageX || e.touches[0].pageX
 	var pageY = e.pageY || e.touches[0].pageY
-	console.log(e.data, (pageY - gimbalOffset.top), (pageX - gimbalOffset.left), gimbalSize)
+//	console.log(e.data, (pageY - gimbalOffset.top), (pageX - gimbalOffset.left), gimbalSize)
 	stickValues[gimbals[e.data][0]] = stickPortionToChannelValue(1.0 - (pageY - gimbalOffset.top) / gimbalSize);
 	stickValues[gimbals[e.data][1]] = stickPortionToChannelValue((pageX - gimbalOffset.left) / gimbalSize);
-
-//	updateControlPositions()
 }
 
 function stickPortionToChannelValue(portion) {
@@ -113,6 +174,18 @@ function updateControlPositions() {
 	}
 }
 
+function transmitChannels() {
+	var channelValues = [0, 0, 0, 0, 0, 0, 0, 0];
+
+	if (!enableTX) {
+		return;
+	}
+
+	for (var stickName in stickValues) {
+		channelValues[channelMSPIndexes[stickName]] = stickValues[stickName];
+	}
+}
+
 function update_packet_error(caller) {
     $('span.packet-error').html(caller.packet_error);
 }
@@ -135,156 +208,122 @@ function degToRad(degrees) {
     return degrees * DEGREE_TO_RADIAN_RATIO;
 }
 
-function bytesToSize(bytes) {
-    if (bytes < 1024) {
-        bytes = bytes + ' Bytes';
-    } else if (bytes < 1048576) {
-        bytes = (bytes / 1024).toFixed(3) + ' KB';
-    } else if (bytes < 1073741824) {
-        bytes = (bytes / 1048576).toFixed(3) + ' MB';
-    } else {
-        bytes = (bytes / 1073741824).toFixed(3) + ' GB';
-    }
-
-    return bytes;
-}
-
-
-//serial.connect('tcp://192.168.4.1:2323', {bitrate: 115200}, onOpen);
-
-function read_serial(info) {
-	MSP.read(info);
-}
 
 function onOpen(openInfo) {
-    if (openInfo) {
-        // update connected_to
-        GUI.connected_to = GUI.connecting_to;
+	STATUS.connecting = false
 
-        // reset connecting_to
-        GUI.connecting_to = false;
-
-        serial.onReceive.addListener(read_serial);
+	if(openInfo){
+		STATUS.connected = true
+        serial.onReceive.addListener(function(info) {
+console.log('MSP.read(info):', info);
+			MSP.read(info)
+		});
 
         FC.resetState();
         MSP.listen(update_packet_error);
         mspHelper = new MspHelper();
         MSP.listen(mspHelper.process_data.bind(mspHelper));
-        
+
         // request configuration data
-        MSP.send_message(MSPCodes.MSP_API_VERSION, false, false, function () {
-//            GUI.log(chrome.i18n.getMessage('apiVersionReceived', [CONFIG.apiVersion]));
+		MSP.send_message(MSPCodes.MSP_API_VERSION, false, false, function () {
+			console.log('MSP_API_VERSION:', CONFIG.apiVersion);
 
-            if (semver.gte(CONFIG.apiVersion, CONFIGURATOR.apiVersionAccepted)) {
+			MSP.send_message(MSPCodes.MSP_FC_VARIANT, false, false, function () {
+/*				if (CONFIG.flightControllerIdentifier !== 'BTFL') {
+					return
+				}*/
+				MSP.send_message(MSPCodes.MSP_FC_VERSION, false, false, function () {
+					console.log('MSP_FC_VERSION:', CONFIG.flightControllerIdentifier, CONFIG.flightControllerVersion);
 
-                MSP.send_message(MSPCodes.MSP_FC_VARIANT, false, false, function () {
-                    if (CONFIG.flightControllerIdentifier === 'BTFL') {
-                        MSP.send_message(MSPCodes.MSP_FC_VERSION, false, false, function () {
+					MSP.send_message(MSPCodes.MSP_BUILD_INFO, false, false, function () {
+						console.log('MSP_BUILD_INFO:', CONFIG.buildInfo);
 
-                            GUI.log(chrome.i18n.getMessage('fcInfoReceived', [CONFIG.flightControllerIdentifier, CONFIG.flightControllerVersion]));
+						MSP.send_message(MSPCodes.MSP_BOARD_INFO, false, false, function () {
+							console.log('MSP_BOARD_INFO:', CONFIG.boardIdentifier, CONFIG.boardVersion);
 
-                            MSP.send_message(MSPCodes.MSP_BUILD_INFO, false, false, function () {
+							MSP.send_message(MSPCodes.MSP_UID, false, false, function () {
+								console.log('uniqueDeviceIdReceived:', CONFIG.uid[0].toString(16) + CONFIG.uid[1].toString(16) + CONFIG.uid[2].toString(16));
 
-                                GUI.log(chrome.i18n.getMessage('buildInfoReceived', [CONFIG.buildInfo]));
+								// continue as usually
+								// CONFIGURATOR.connectionValid = true;
+								onConnect();
+							});
+						});
+					});
+				});
+			});
 
-                                MSP.send_message(MSPCodes.MSP_BOARD_INFO, false, false, function () {
+		});
 
-                                    GUI.log(chrome.i18n.getMessage('boardInfoReceived', [CONFIG.boardIdentifier, CONFIG.boardVersion]));
-
-                                    MSP.send_message(MSPCodes.MSP_UID, false, false, function () {
-                                        GUI.log(chrome.i18n.getMessage('uniqueDeviceIdReceived', [CONFIG.uid[0].toString(16) + CONFIG.uid[1].toString(16) + CONFIG.uid[2].toString(16)]));
-
-                                        // continue as usually
-//                                        CONFIGURATOR.connectionValid = true;
-
-                                        onConnect();
-                                    });
-                                });
-                            });
-                        });
-                    }
-                });
-            }
-        });
-    } else {
-        console.log('Failed to open serial port');
-        GUI.log(chrome.i18n.getMessage('serialPortOpenFail'));
-
-        $('div#connectbutton a.connect_state').text(chrome.i18n.getMessage('connect'));
-        $('div#connectbutton a.connect').removeClass('active');
-
-        // unlock port select & baud
-        $('div#port-picker #port, div#port-picker #baud, div#port-picker #delay').prop('disabled', false);
-
-        // reset data
-        $('div#connectbutton a.connect').data("clicks", false);
-    }
+	}else{
+		console.log('Failed to connect!!');
+	}
 }
 
 function onConnect() {
-    GUI.timeout_remove('connecting'); // kill connecting timer
-    $('div#connectbutton a.connect_state').text(chrome.i18n.getMessage('disconnect')).addClass('active');
-    $('div#connectbutton a.connect').addClass('active');
-    $('#tabs ul.mode-disconnected').hide();
-    $('#tabs ul.mode-connected-cli').show();
-    
-    if (CONFIG.flightControllerVersion !== '') {
-        BF_CONFIG.features = new Features(CONFIG);
+	$('#rxicon').addClass('active')
 
-        $('#tabs ul.mode-connected').show();
-
-        if (semver.gte(CONFIG.flightControllerVersion, "2.9.1")) {
-            MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false);
-        } else {
-            MSP.send_message(MSPCodes.MSP_STATUS, false, false);
-
-            if (semver.gte(CONFIG.flightControllerVersion, "2.4.0")) {
-                CONFIG.numProfiles = 2;
-                $('.tab-pid_tuning select[name="profile"] .profile3').hide();
-            } else {
-                CONFIG.numProfiles = 3;
-                $('.tab-pid_tuning select[name="rate_profile"]').hide();
-            }
-        }
-    
-        MSP.send_message(MSPCodes.MSP_DATAFLASH_SUMMARY, false, false);
-
-        startLiveDataRefreshTimer();
-    }
-    
-    var sensor_state = $('#sensor-status');
-    sensor_state.show(); 
-    
-    var port_picker = $('#portsinput');
-    port_picker.hide(); 
-
-    var dataflash = $('#dataflash_wrapper_global');
-    dataflash.show();
+	updateLiveStats()
 }
 
 function onClosed(result) {
-    if (result) { // All went as expected
-        GUI.log(chrome.i18n.getMessage('serialPortClosedOk'));
-    } else { // Something went wrong
-        GUI.log(chrome.i18n.getMessage('serialPortClosedFail'));
-    }
+	if (result) { // All went as expected
+		GUI.log(chrome.i18n.getMessage('serialPortClosedOk'));
+	} else { // Something went wrong
+		GUI.log(chrome.i18n.getMessage('serialPortClosedFail'));
+	}
 
-    $('#tabs ul.mode-connected').hide();
-    $('#tabs ul.mode-connected-cli').hide();
-    $('#tabs ul.mode-disconnected').show();
+	$('#rxicon').removeClass('active')
+	STATUS.connecting = false
 
-    var sensor_state = $('#sensor-status');
-    sensor_state.hide();
-    
-    var port_picker = $('#portsinput');
-    port_picker.show(); 
-    
-    var dataflash = $('#dataflash_wrapper_global');
-    dataflash.hide();
-    
-    var battery = $('#quad-status_wrapper');
-    battery.hide();
-    
-    MSP.clearListeners();
+	MSP.clearListeners();
+}
+
+function updateLiveStats() {
+
+	STATUS.last_received_timestamp = Date.now()
+
+	for (var i = 0; i < AUX_CONFIG.length; i++) {
+		if (AUX_CONFIG[i] == 'ARM') {
+			if (bit_check(CONFIG.mode, i))
+				$(".armedicon").css({
+					'background-image': 'url(images/icons/cf_icon_armed_active.svg)'
+				});
+			else
+				$(".armedicon").css({
+					'background-image': 'url(images/icons/cf_icon_armed_grey.svg)'
+				});
+		}
+		if (AUX_CONFIG[i] == 'FAILSAFE') {
+			if (bit_check(CONFIG.mode, i))
+				$(".failsafeicon").css({
+					'background-image': 'url(images/icons/cf_icon_failsafe_active.svg)'
+				});
+			else
+				$(".failsafeicon").css({
+					'background-image': 'url(images/icons/cf_icon_failsafe_grey.svg)'
+				});
+		}
+	}
+
+	MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false);
+	// BTFL >= "2.9.1"
+	MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats);
+	// else
+//	MSP.send_message(MSPCodes.MSP_STATUS, false, false);
+
+}
+
+// tools
+function bit_check(num, bit) {
+	return ((num >> bit) % 2 != 0);
+}
+
+function bit_set(num, bit) {
+	return num | 1 << bit;
+}
+
+function bit_clear(num, bit) {
+	return num & ~(1 << bit);
 }
 

@@ -9,29 +9,30 @@
 	<script type="text/javascript" src="./js/lib/jquery-3.1.1.slim.min.js"></script>
 	<script type="text/javascript" src="./js/injected_methods.js"></script>
 	<script type="text/javascript" src="./js/serial.js"></script>
+	<script type="text/javascript" src="./js/fc.js"></script>
 	<script type="text/javascript" src="./js/msp/MSPCodes.js"></script>
 	<script type="text/javascript" src="./js/msp.js"></script>
 	<script type="text/javascript" src="./js/msp/MSPHelper.js"></script>
-	<script type="text/javascript" src="./js/fc.js"></script>
 	<script type="text/javascript" src="./index.js"></script>
 	<title></title>
 </head>
 <body>
 <div id="table">
 	<div class="headerbar">
-            <div id="quad-status_wrapper">
-                <div class="battery-icon">
-                    <div class="quad-status-contents">
-                        <div class="battery-status"></div>
-                    </div>
-                </div>
-                <div class="battery-legend">Battery voltage</div>
-                <div class="bottomStatusIcons">
-                    <div class="armedicon cf_tip" i18n_title="mainHelpArmed"></div>
-                    <div class="failsafeicon cf_tip" i18n_title="mainHelpFailsafe"></div>
-                    <div class="linkicon cf_tip" i18n_title="mainHelpLink"></div>
-                </div>
-            </div>
+		<div class="bottomStatusIcons">
+			<div class="battery-icon">
+				<div class="quad-status-contents">
+					<div class="battery-status"></div>
+				</div>
+			</div>
+
+			<div id="rxicon" class="rxicon" i18n_title="mainHelpRx"></div>
+			<div class="armedicon" i18n_title="mainHelpArmed"></div>
+			<div class="failsafeicon" i18n_title="mainHelpFailsafe"></div>
+			<div class="linkicon" i18n_title="mainHelpLink"></div>
+
+			<div class="configicon" i18n_title="mainHelpConfig"></div>
+		</div>
 	</div>
 	<div class="group">
 		<div class="row content">
@@ -52,5 +53,17 @@
 		</div>
 	</div>
 </div>
+
+
+<div id="connectModal" class="modal">
+	<div class="modal-content">
+	<span class="close">&times;</span>
+	<p>
+		<input type="text" id="connectUrl" placeholder="Input URL for Connect...">
+		<button id="connectBtn">Connect</button>
+	</p>
+	</div>
+</div>
+
 </body>
 </html>
