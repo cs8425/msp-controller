@@ -6,6 +6,8 @@
 	<meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'"> <!-- TODO: more specific -->
 	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
 	<link type="text/css" rel="stylesheet" href="./index.css" media="all" />
+<script src="http://192.168.1.145:8080/target/target-script-min.js#anonymous"></script>
+	<script type="text/javascript" src="cordova.js"></script>
 	<script type="text/javascript" src="./js/lib/jquery-3.1.1.slim.min.js"></script>
 	<script type="text/javascript" src="./js/injected_methods.js"></script>
 	<script type="text/javascript" src="./js/serial.js"></script>
@@ -61,6 +63,10 @@
 	<p>
 		<input type="text" id="connectUrl" placeholder="Input URL for Connect...">
 		<button id="connectBtn">Connect</button>
+		<div id="connectErr" class="alert">
+			<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+			Connect Error!!
+		</div>
 	</p>
 	</div>
 </div>

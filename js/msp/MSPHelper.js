@@ -75,17 +75,15 @@ MspHelper.prototype.process_data = function(dataHandler) {
                 CONFIG.mode = data.readU32();
                 CONFIG.profile = data.readU8();
                 CONFIG.cpuload = data.readU16();
-                if (semver.gt(CONFIG.flightControllerVersion, "2.9.1")) {
+                //if (semver.gt(CONFIG.flightControllerVersion, "2.9.1")) {
                     CONFIG.numProfiles = data.readU8();
                     CONFIG.rateProfile = data.readU8();
+                //}
     
-                    TABS.pid_tuning.checkUpdateProfile(true);
-                }
-    
-                sensor_status(CONFIG.activeSensors);
+                /*sensor_status(CONFIG.activeSensors);
                 $('span.i2c-error').text(CONFIG.i2cError);
                 $('span.cycle-time').text(CONFIG.cycleTime);
-                $('span.cpu-load').text(chrome.i18n.getMessage('statusbar_cpu_load', [CONFIG.cpuload]));
+                $('span.cpu-load').text(chrome.i18n.getMessage('statusbar_cpu_load', [CONFIG.cpuload]));*/
                 break;
     
             case MSPCodes.MSP_RAW_IMU:
@@ -204,9 +202,9 @@ MspHelper.prototype.process_data = function(dataHandler) {
                 }
                 break;
             case MSPCodes.MSP_LOOP_TIME:
-                if (semver.gte(CONFIG.apiVersion, "1.8.0")) {
+                //if (semver.gte(CONFIG.apiVersion, "1.8.0")) {
                     FC_CONFIG.loopTime = data.readU16();
-                }
+                //}
                 break;
             case MSPCodes.MSP_MISC: // 22 bytes
                 RX_CONFIG.midrc = data.readU16();

@@ -19,16 +19,6 @@ var
     },
     
     // Set reasonable initial stick positions (Mode 2)
-/*    stickValues = {
-        throttle: CHANNEL_MIN_VALUE,
-        pitch: CHANNEL_MID_VALUE,
-        roll: CHANNEL_MID_VALUE,
-        yaw: CHANNEL_MID_VALUE,
-        aux1: CHANNEL_MIN_VALUE,
-        aux2: CHANNEL_MIN_VALUE,
-        aux3: CHANNEL_MIN_VALUE,
-        aux4: CHANNEL_MIN_VALUE
-    },*/
     stickValues = {
         T: CHANNEL_MIN_VALUE,
         E: CHANNEL_MID_VALUE,
@@ -48,9 +38,8 @@ var
     gimbals = [
         ["T", "R"],
         ["E", "A"],
-    ],
-    
-    enableTX = false;
+    ];
+
 
 var gimbalElems = null;
 var gimbalSize = null;
@@ -60,7 +49,9 @@ var mspHelper;
 var STATUS = {
 	connecting: false,
 	connected: false,
+	enableTX: false
 }
+var transmitTimer = null;
 
 $(document).ready(function() {
 
@@ -69,14 +60,26 @@ $(document).ready(function() {
 
 	for(var i=0; i<gimbalElems.length; i++){
 		(function(ele, i){
+			var tid = null;
 			ele.on('touchstart mousedown', function(e) {
 				e.preventDefault()
-				ele.on('touchmove mousemove', i, handleGimbalDrag);
+				if(e.changedTouches){
+					tid = e.changedTouches[0].identifier
+				}
+//console.log(this, e, e.data, tid)
+				ele.on('touchmove mousemove', [i, tid], handleGimbalDrag);
+				e.data = [i, tid]
+				handleGimbalDrag.call(this, e)
 			});
 
 			ele.on('touchend mouseup', function(e) {
 				e.preventDefault()
+				tid = null
 				ele.off('touchmove mousemove', handleGimbalDrag);
+//console.log(stickValues)
+				// auto center
+				stickValues[gimbals[i][0]] = CHANNEL_MID_VALUE;
+				stickValues[gimbals[i][1]] = CHANNEL_MID_VALUE;
 			});
 		})($(gimbalElems[i]), i)
 	}
@@ -87,7 +90,11 @@ $(document).ready(function() {
 		$('#connectModal').hide()
 	})
 	$('#rxicon').on('click', function(e){
-		$('#connectModal').show()
+		if(!STATUS.connected){
+			$('#connectModal').show()
+		}else{
+			disconnect()
+		}
 	})
 	$(document).on('click', function(e){
 //		console.log(e.target, $(e.target).hasClass('modal'))
@@ -96,7 +103,8 @@ $(document).ready(function() {
 			target.hide()
 		}
 	})
-	$('#connectUrl').val('tcp://192.168.4.1:2323')
+//	$('#connectUrl').val('tcp://192.168.4.1:2323')
+	$('#connectUrl').val('tcp://192.168.1.60:2323')
 	$('#connectBtn').on('click', function(e){
 		if(!STATUS.connected){
 			if(!STATUS.connecting){
@@ -108,7 +116,7 @@ $(document).ready(function() {
 				return
 			}
 		}
-		serial.disconnect(onClosed);
+		disconnect()
 	})
 
 })
@@ -131,16 +139,29 @@ function updateUI() {
 }
 
 function handleGimbalDrag(e) {
-//	console.log(this, e);
+//	console.log(this, e)
 	e.preventDefault()
     var gimbal = $(this)
 	var gimbalOffset = gimbal.offset()
 	var gimbalSize = gimbal.height()
-	var pageX = e.pageX || e.touches[0].pageX
-	var pageY = e.pageY || e.touches[0].pageY
+	var pageX = e.pageX
+	var pageY = e.pageY
+	var tid = e.data[1]
+	if(e.changedTouches){
+		var list = e.changedTouches
+		for(var i=0; i<list.length; i++){
+			var t = list[i]
+			if(t.identifier == tid){
+//console.log(tid, i, t)
+				pageX = t.pageX
+				pageY = t.pageY
+				break
+			}
+		}
+	}
 //	console.log(e.data, (pageY - gimbalOffset.top), (pageX - gimbalOffset.left), gimbalSize)
-	stickValues[gimbals[e.data][0]] = stickPortionToChannelValue(1.0 - (pageY - gimbalOffset.top) / gimbalSize);
-	stickValues[gimbals[e.data][1]] = stickPortionToChannelValue((pageX - gimbalOffset.left) / gimbalSize);
+	stickValues[gimbals[e.data[0]][0]] = stickPortionToChannelValue(1.0 - (pageY - gimbalOffset.top) / gimbalSize);
+	stickValues[gimbals[e.data[0]][1]] = stickPortionToChannelValue((pageX - gimbalOffset.left) / gimbalSize);
 }
 
 function stickPortionToChannelValue(portion) {
@@ -177,37 +198,26 @@ function updateControlPositions() {
 function transmitChannels() {
 	var channelValues = [0, 0, 0, 0, 0, 0, 0, 0];
 
-	if (!enableTX) {
+	if (!STATUS.connected) {
 		return;
 	}
+
+/*	if (!STATUS.enableTX) {
+		return;
+	}*/
 
 	for (var stickName in stickValues) {
 		channelValues[channelMSPIndexes[stickName]] = stickValues[stickName];
 	}
+
+	mspHelper.setRawRx(channelValues)
+
+	transmitTimer = setTimeout(transmitChannels,25)
 }
 
 function update_packet_error(caller) {
     $('span.packet-error').html(caller.packet_error);
 }
-
-function microtime() {
-    var now = new Date().getTime() / 1000;
-
-    return now;
-}
-
-function millitime() {
-    var now = new Date().getTime();
-
-    return now;
-}
-
-var DEGREE_TO_RADIAN_RATIO = Math.PI / 180;
-
-function degToRad(degrees) {
-    return degrees * DEGREE_TO_RADIAN_RATIO;
-}
-
 
 function onOpen(openInfo) {
 	STATUS.connecting = false
@@ -215,9 +225,10 @@ function onOpen(openInfo) {
 	if(openInfo){
 		STATUS.connected = true
         serial.onReceive.addListener(function(info) {
-console.log('MSP.read(info):', info);
+//console.log('MSP.read(info):', info);
 			MSP.read(info)
 		});
+//		serial.onReceive.addListener(MSP.read)
 
         FC.resetState();
         MSP.listen(update_packet_error);
@@ -254,29 +265,40 @@ console.log('MSP.read(info):', info);
 			});
 
 		});
-
+		$('#connectErr').hide()
 	}else{
+		$('#connectErr').show()
 		console.log('Failed to connect!!');
 	}
 }
 
 function onConnect() {
+	$('#connectModal').hide()
 	$('#rxicon').addClass('active')
 
 	updateLiveStats()
+
+	if(transmitTimer) clearTimeout(transmitTimer)
+	transmitChannels()
 }
 
 function onClosed(result) {
 	if (result) { // All went as expected
-		GUI.log(chrome.i18n.getMessage('serialPortClosedOk'));
+		console.log('connectionClosedOk');
 	} else { // Something went wrong
-		GUI.log(chrome.i18n.getMessage('serialPortClosedFail'));
+		console.log('connectionClosedFail');
 	}
 
 	$('#rxicon').removeClass('active')
 	STATUS.connecting = false
+	STATUS.connected = false
 
 	MSP.clearListeners();
+}
+
+function disconnect() {
+	serial.disconnect(onClosed)
+	MSP.disconnect_cleanup()
 }
 
 function updateLiveStats() {

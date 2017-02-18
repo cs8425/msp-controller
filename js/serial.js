@@ -190,16 +190,16 @@ var serial = {
             }
 
             chrome.sockets.tcp.connect(createInfo.socketId, self.connectionIP, self.connectionPort, function (result){
-                if (chrome.runtime.lastError) {
+                /*if (chrome.runtime.lastError) {
                     console.error('onConnectedCallback', chrome.runtime.lastError.message);
-                }
+                }*/
 
                 console.log('onConnectedCallback', result)
                 if(result == 0) {
                     chrome.sockets.tcp.setNoDelay(createInfo.socketId, true, function (noDelayResult){
-                        if (chrome.runtime.lastError) {
+                        /*if (chrome.runtime.lastError) {
                             console.error('setNoDelay', chrome.runtime.lastError.message);
-                        }
+                        }*/
 
                         console.log('setNoDelay', noDelayResult)
                         if(noDelayResult != 0) {
@@ -259,9 +259,9 @@ var serial = {
 
             var disconnectFn = (self.connectionType == 'serial') ? chrome.serial.disconnect : chrome.sockets.tcp.close;
             disconnectFn(this.connectionId, function (result) {
-                if (chrome.runtime.lastError) {
+                /*if (chrome.runtime.lastError) {
                     console.error(chrome.runtime.lastError.message);
-                }
+                }*/
 
                 result = result || self.connectionType == 'tcp'
                 if (result) {
