@@ -137,11 +137,11 @@ body {
     left: -65px;
 }
 
-button {
+.button {
 	background-color: #4CAF50;
 	color: white;
-	padding: 14px 20px;
-	margin: 8px 0;
+	padding: 14px 14px;
+	margin: 8px;
 	border: none;
 	cursor: pointer;
 }
@@ -232,6 +232,37 @@ button {
 	background-image: url(images/icons/cf_icon_rx_active.svg);
 }
 
+.status {
+	float: left;
+	min-height: 18px;
+	min-width: 18px;
+	width: calc(20vh - 22px);
+	height: calc(20vh - 22px);
+
+	background-color: #4CAF50;
+	color: white;
+/*	padding: 14px 14px;*/
+	margin: 8px;
+	border: none;
+	cursor: pointer;
+}
+
+.success {
+	background-color: #4CAF50;
+}
+
+.info {
+	background-color: #2196F3;
+}
+
+.warning {
+	background-color: #ff9800;
+}
+
+.danger {
+	background-color: #f44336;
+}
+
 .bottomStatusIcons {
 	background-color: #272727;
 /*    height: 31px;
@@ -264,6 +295,12 @@ button {
     padding: 20px;
     border: 1px solid #888;
     width: 80%; /* Could be more or less, depending on screen size */
+}
+
+#configModal > div.modal-content {
+	margin: auto;
+	height: 85vh;
+	width: 90vw;
 }
 
 /* The Close Button */

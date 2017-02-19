@@ -51,14 +51,23 @@ var mspHelper;
 var STATUS = {
 	connecting: false,
 	connected: false,
-	enableTX: false
+	enableTX: false,
+	mode: [],
+	rate: 0.3
 }
-var CONFIG = {
+var SAVE = {
 	url: 'tcp://192.168.4.1:2323',
 //	url: 'tcp://192.168.1.60:2323',
 	droneCh: 'TREA1234',
 	ctrlCh: 'TREA',
 	autoCenter: [0,1],
+	aux: [
+		[1100,1900],
+		[1100,1900],
+		[1100,1900],
+		[1100,1900]
+	],
+	rates: [0.3, 0.6, 1.0]
 }
 var transmitTimer = null;
 
@@ -90,7 +99,7 @@ $(document).ready(function() {
 				ele.off('touchmove mousemove', handleGimbalDrag);
 //console.log(stickValues)
 				// auto center
-				if(CONFIG.autoCenter[i]) stickValues[gimbals[i][0]] = CHANNEL_MID_VALUE;
+				if(SAVE.autoCenter[i]) stickValues[gimbals[i][0]] = CHANNEL_MID_VALUE;
 				stickValues[gimbals[i][1]] = CHANNEL_MID_VALUE;
 			});
 		})($(gimbalElems[i]), i)
@@ -122,7 +131,6 @@ $(document).ready(function() {
 		}
 	})
 
-	$('#connectUrl').val(CONFIG.url)
 	$('#connectBtn').on('click', function(e){
 		if(!STATUS.connected){
 			if(!STATUS.connecting){
@@ -132,8 +140,8 @@ $(document).ready(function() {
 				STATUS.connected = false
 				serial.connect(url, {bitrate: 115200}, onOpen)
 
-				CONFIG.url = url
-				window.localStorage.setItem('CONFIG', JSON.stringify(CONFIG))
+				SAVE.url = url
+				window.localStorage.setItem('SAVE', JSON.stringify(SAVE))
 				return
 			}
 		}
@@ -141,39 +149,77 @@ $(document).ready(function() {
 	})
 
 	$('#saveConfig').on('click', function(e){
-		CONFIG.droneCh = $('#droneCh').val() || 'TREA1234'
-		CONFIG.ctrlCh = $('#ctrlCh').val() || 'TREA'
+		SAVE.droneCh = $('#droneCh').val() || 'TREA1234'
+		SAVE.ctrlCh = $('#ctrlCh').val() || 'TREA'
 
 		var autoCenter = [1,1]
 		autoCenter[0] = ($('#lauto').is(":checked")) ? 1 : 0;
 		autoCenter[1] = ($('#rauto').is(":checked")) ? 1 : 0;
-		CONFIG.autoCenter = autoCenter
+		SAVE.autoCenter = autoCenter
 
-		console.log('CONFIG', CONFIG)
-		window.localStorage.setItem('CONFIG', JSON.stringify(CONFIG))
+		console.log('SAVE', SAVE)
+		window.localStorage.setItem('SAVE', JSON.stringify(SAVE))
 
 		updateConfig()
 		$('#configModal').hide()
 	})
 
+	var rateClicks = 1;
+	var rateBtn = $('#rateBtn')
+	rateBtn.on('click', function(e){
+		if(SAVE.rates[rateClicks]){
+			STATUS.rate = SAVE.rates[rateClicks]
+			rateClicks = (rateClicks+1) % SAVE.rates.length;
+			rateBtn.text('rate: ' + Math.round(STATUS.rate * 100) + '%')
+		}
+	})
+
+	for(var i=1; i<5; i++){
+		(function(i){
+			var color = ['success', 'info', 'warning']
+			var auxClicks = 1;
+			var auxBtn = $('#aux' + i)
+			auxBtn.on('click', function(e){
+				if(SAVE.aux[i-1][auxClicks]){
+					stickValues[(i).toString()] = SAVE.aux[i-1][auxClicks]
+
+					for(var j=0; j<color.length; j++) {
+						auxBtn.removeClass(color[j])
+					}
+					auxBtn.addClass(color[auxClicks])
+
+					auxClicks = (auxClicks+1) % SAVE.aux[i-1].length;
+				}
+			})
+		})(i)
+	}
 })
 
 function loadConfig() {
-	var conf = JSON.parse(window.localStorage.getItem('CONFIG'))
+	var conf = JSON.parse(window.localStorage.getItem('SAVE'))
 	if(conf){
-		CONFIG = conf
+		SAVE = conf
 	}
-	$('#droneCh').val(CONFIG.droneCh)
-	$('#ctrlCh').val(CONFIG.ctrlCh)
-	$('#connectUrl').val(CONFIG.url)
+	$('#droneCh').val(SAVE.droneCh)
+	$('#ctrlCh').val(SAVE.ctrlCh)
+	$('#connectUrl').val(SAVE.url)
 
-	$('#lauto').attr('checked', !!(CONFIG.autoCenter[0]))
-	$('#rauto').attr('checked', !!(CONFIG.autoCenter[1]))
+	$('#lauto').attr('checked', !!(SAVE.autoCenter[0]))
+	$('#rauto').attr('checked', !!(SAVE.autoCenter[1]))
+
+	SAVE.aux = [
+		[1100,1900],
+		[1100,1900],
+		[1100,1900],
+		[1100,1900]
+	]
+
+	SAVE.rates = [0.3, 0.6, 1.0]
 }
 
 function updateConfig() {
 	// set gimbals channel
-	var ctrlCh = CONFIG.ctrlCh
+	var ctrlCh = SAVE.ctrlCh
 	if(ctrlCh.length == 4){
 		gimbals = [
 			[ctrlCh[0], ctrlCh[1]],
@@ -182,17 +228,23 @@ function updateConfig() {
 	}
 
 	// set encode channel
-	var droneCh = CONFIG.droneCh
+	var droneCh = SAVE.droneCh
 	for(var i=0; i<droneCh.length; i++){
 //		console.log(droneCh[i], i)
 		channelMSPIndexes[droneCh[i]] = i
+	}
+
+	// set aux channel
+	var aux = SAVE.aux
+	for(var i=1; i<aux.length; i++){
+		stickValues[i.toString()] = aux[i][0]
 	}
 }
 
 function updateUI() {
 	updateControlPositions()
 
-	var active = ((Date.now() - STATUS.last_received_timestamp) < 300);
+	var active = ((Date.now() - STATUS.last_received_timestamp) < 500);
 	if(active){
 		$(".linkicon").css({
 			'background-image': 'url(images/icons/cf_icon_link_active.svg)'
@@ -275,12 +327,16 @@ function transmitChannels() {
 	}*/
 
 	for (var stickName in stickValues) {
-		channelValues[channelMSPIndexes[stickName]] = stickValues[stickName];
+		var val = stickValues[stickName]
+		if((stickName != 'T')||(stickName != 'R')){
+			val = Math.round((val - CHANNEL_MID_VALUE) * STATUS.rate + CHANNEL_MID_VALUE)
+		}
+		channelValues[channelMSPIndexes[stickName]] = val;
 	}
 
 	mspHelper.setRawRx(channelValues)
 
-	transmitTimer = setTimeout(transmitChannels,25)
+	transmitTimer = setTimeout(transmitChannels, 25)
 }
 
 function update_packet_error(caller) {
@@ -296,7 +352,6 @@ function onOpen(openInfo) {
 //console.log('MSP.read(info):', info);
 			MSP.read(info)
 		});
-//		serial.onReceive.addListener(MSP.read)
 
         FC.resetState();
         MSP.listen(update_packet_error);
@@ -361,7 +416,8 @@ function onClosed(result) {
 	STATUS.connecting = false
 	STATUS.connected = false
 
-	MSP.clearListeners();
+	MSP.clearListeners()
+	MSP.disconnect_cleanup()
 }
 
 function disconnect() {
@@ -373,7 +429,14 @@ function updateLiveStats() {
 
 	STATUS.last_received_timestamp = Date.now()
 
+	var mode = []
 	for (var i = 0; i < AUX_CONFIG.length; i++) {
+		if (bit_check(CONFIG.mode, i)){
+			var theMode = AUX_CONFIG[i]
+			if((theMode != 'ARM') && (theMode != 'FAILSAFE')){
+				mode.push(theMode)
+			}
+		}
 		if (AUX_CONFIG[i] == 'ARM') {
 			if (bit_check(CONFIG.mode, i))
 				$(".armedicon").css({
@@ -395,13 +458,28 @@ function updateLiveStats() {
 				});
 		}
 	}
+	STATUS.mode = mode
 
-	MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false);
-	// BTFL >= "2.9.1"
-	MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats);
-	// else
-//	MSP.send_message(MSPCodes.MSP_STATUS, false, false);
+	$('#flymode').text(STATUS.mode.join(','))
 
+	$('#cycleTime').text('cycle: ' + CONFIG.cycleTime)
+	var cpu = $('#cpuload')
+	cpu.text('cpu: ' + CONFIG.cpuload + '%')
+	if(CONFIG.cpuload > 80){
+		cpu.removeClass('warning').addClass('danger')
+	}else if(CONFIG.cpuload > 60){
+		cpu.addClass('warning').removeClass('danger')
+	}else{
+		cpu.removeClass('warning').removeClass('danger')
+	}
+
+	setTimeout(function(){
+		MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false);
+		// BTFL >= "2.9.1"
+		MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats);
+		// else
+//		MSP.send_message(MSPCodes.MSP_STATUS, false, false);
+	}, 200)
 }
 
 // tools
