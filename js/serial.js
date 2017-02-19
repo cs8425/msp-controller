@@ -219,11 +219,7 @@ var serial = {
                             switch (info.resultCode) {
                                 case -100: // CONNECTION_CLOSED
                                 case -102: // CONNECTION_REFUSED
-                                    if (GUI.connected_to || GUI.connecting_to) {
-                                        $('a.connect').click();
-                                    } else {
-                                        self.disconnect();
-                                    }
+                                    self.disconnect();
                                     break;
 
                             }

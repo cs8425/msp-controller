@@ -83,7 +83,7 @@ $(document).ready(function() {
 		(function(ele, i){
 			var tid = null;
 			ele.on('touchstart mousedown', function(e) {
-//				e.preventDefault()
+				e.preventDefault()
 				if(e.changedTouches){
 					tid = e.changedTouches[0].identifier
 				}
@@ -166,7 +166,11 @@ $(document).ready(function() {
 
 	var rateClicks = 1;
 	var rateBtn = $('#rateBtn')
-	rateBtn.on('click', function(e){
+	rateBtn.on('click touchend', function(e){
+		if(('ontouchstart' in window) && (e.type == 'click')){
+			return false
+		}
+
 		if(SAVE.rates[rateClicks]){
 			STATUS.rate = SAVE.rates[rateClicks]
 			rateClicks = (rateClicks+1) % SAVE.rates.length;
@@ -179,7 +183,11 @@ $(document).ready(function() {
 			var color = ['success', 'info', 'warning']
 			var auxClicks = 1;
 			var auxBtn = $('#aux' + i)
-			auxBtn.on('click', function(e){
+			auxBtn.on('click touchend', function(e){
+				if(('ontouchstart' in window) && (e.type == 'click')){
+					return false
+				}
+
 				if(SAVE.aux[i-1][auxClicks]){
 					stickValues[(i).toString()] = SAVE.aux[i-1][auxClicks]
 
@@ -236,8 +244,8 @@ function updateConfig() {
 
 	// set aux channel
 	var aux = SAVE.aux
-	for(var i=1; i<aux.length; i++){
-		stickValues[i.toString()] = aux[i][0]
+	for(var i=0; i<aux.length; i++){
+		stickValues[(i+1).toString()] = aux[i][0]
 	}
 }
 
@@ -328,7 +336,9 @@ function transmitChannels() {
 
 	for (var stickName in stickValues) {
 		var val = stickValues[stickName]
-		if((stickName != 'T')||(stickName != 'R')){
+
+		// only roll & pitch
+		if((stickName == 'E')||(stickName == 'A')){
 			val = Math.round((val - CHANNEL_MID_VALUE) * STATUS.rate + CHANNEL_MID_VALUE)
 		}
 		channelValues[channelMSPIndexes[stickName]] = val;
@@ -417,10 +427,10 @@ function onClosed(result) {
 	STATUS.connected = false
 
 	MSP.clearListeners()
-	MSP.disconnect_cleanup()
 }
 
 function disconnect() {
+	STATUS.connected = false
 	serial.disconnect(onClosed)
 	MSP.disconnect_cleanup()
 }
@@ -474,6 +484,7 @@ function updateLiveStats() {
 	}
 
 	setTimeout(function(){
+		if(!STATUS.connected) return
 		MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false);
 		// BTFL >= "2.9.1"
 		MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats);
