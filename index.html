@@ -6,7 +6,7 @@
 	<meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'"> <!-- TODO: more specific -->
 	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
 	<link type="text/css" rel="stylesheet" href="./index.css" media="all" />
-<script src="http://192.168.1.145:8080/target/target-script-min.js#anonymous"></script>
+<!--<script src="http://192.168.1.145:8080/target/target-script-min.js#anonymous"></script>-->
 	<script type="text/javascript" src="cordova.js"></script>
 	<script type="text/javascript" src="./js/lib/jquery-3.1.1.slim.min.js"></script>
 	<script type="text/javascript" src="./js/injected_methods.js"></script>
@@ -28,17 +28,26 @@
 			<div class="failsafeicon" i18n_title="mainHelpFailsafe"></div>
 			<div class="linkicon" i18n_title="mainHelpLink"></div>
 
-			<div class="configicon" i18n_title="mainHelpConfig"></div>
+			<div id="configicon" class="configicon" i18n_title="mainHelpConfig"></div>
 		</div>
 	</div>
 	<div class="group">
 		<div class="row content">
+			<div class="cell trim">
+				<div>^</div>
+				<div>V</div>
+			</div>
 			<div class="cell left">
 				<div class="control-gimbal left">
 					<span class="gimbal-label gimbal-label-vert"></span> <span class="gimbal-label gimbal-label-horz"></span>
 					<span class="crosshair crosshair-vert"></span> <span class="crosshair crosshair-horz"></span>
 					<div class="control-stick left"></div>
 				</div>
+			</div>
+			<div class="cell center">
+				<button id="aux1">AUX1</button>
+				<button id="aux2">AUX2</button>
+				<button id="aux3">AUX3</button>
 			</div>
 			<div class="cell right">
 				<div class="control-gimbal right">
@@ -47,6 +56,10 @@
 					<div class="control-stick right"></div>
 				</div>
 			</div>
+			<div class="cell trim">
+				<div>^</div>
+				<div>V</div>
+			</div>
 		</div>
 	</div>
 </div>
@@ -54,15 +67,48 @@
 
 <div id="connectModal" class="modal">
 	<div class="modal-content">
-	<span class="close">&times;</span>
-	<p>
-		<input type="text" id="connectUrl" placeholder="Input URL for Connect...">
-		<button id="connectBtn">Connect</button>
-		<div id="connectErr" class="alert">
-			<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
-			Connect Error!!
+		<span class="close">&times;</span>
+		<div>
+			<input type="text" id="connectUrl" placeholder="Input URL for Connect..." />
+			<button id="connectBtn">Connect</button>
+			<div id="connectErr" class="alert">
+				<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+				Connect Error!!
+			</div>
 		</div>
-	</p>
+	</div>
+</div>
+
+<div id="configModal" class="modal">
+	<div class="modal-content">
+		<span class="close">&times;</span>
+		<div>
+				<strong>left gimbal auto center:</strong>
+				<div class="onoffswitch">
+					<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="lauto">
+					<label class="onoffswitch-label" for="lauto">
+						<span class="onoffswitch-inner"></span>
+						<span class="onoffswitch-switch"></span>
+					</label>
+				</div>
+		</div>
+		<div>
+				<strong>right gimbal auto center:</strong>
+				<div class="onoffswitch">
+					<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="rauto" checked>
+					<label class="onoffswitch-label" for="rauto">
+						<span class="onoffswitch-inner"></span>
+						<span class="onoffswitch-switch"></span>
+					</label>
+				</div>
+		</div>
+		<div>
+			<input type="text" id="droneCh" placeholder="TREA1234" />
+			<input type="text" id="ctrlCh" placeholder="TREA" />
+		</div>
+		<div>
+			<button id="saveConfig">Save</button>
+		</div>
 	</div>
 </div>
 

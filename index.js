@@ -1,44 +1,46 @@
 'use strict';
 
 var
-    CHANNEL_MIN_VALUE = 1000,
-    CHANNEL_MID_VALUE = 1500,
-    CHANNEL_MAX_VALUE = 2000,
+	CHANNEL_MIN_VALUE = 1000,
+	CHANNEL_MID_VALUE = 1500,
+	CHANNEL_MAX_VALUE = 2000,
 
+	// What's the index of each channel in the MSP channel list?
+	// drone >> receiver >> channel map
 	// TREA1234
-    // What's the index of each channel in the MSP channel list?
-    channelMSPIndexes = {
-        A: 3,
-        E: 2,
-        R: 1,
-        T: 0,
-        aux1: 4,
-        aux2: 5,
-        aux3: 6,
-        aux4: 7,
-    },
+	// TAER1234
+	channelMSPIndexes = {
+		A: 3,
+		E: 2,
+		R: 1,
+		T: 0,
+		'1': 4,
+		'2': 5,
+		'3': 6,
+		'4': 7,
+	},
     
-    // Set reasonable initial stick positions (Mode 2)
-    stickValues = {
-        T: CHANNEL_MIN_VALUE,
-        E: CHANNEL_MID_VALUE,
-        A: CHANNEL_MID_VALUE,
-        R: CHANNEL_MID_VALUE,
-        aux1: CHANNEL_MIN_VALUE,
-        aux2: CHANNEL_MIN_VALUE,
-        aux3: CHANNEL_MIN_VALUE,
-        aux4: CHANNEL_MIN_VALUE
-    },
+    // Set reasonable initial stick positions
+	stickValues = {
+		T: CHANNEL_MIN_VALUE,
+		E: CHANNEL_MID_VALUE,
+		A: CHANNEL_MID_VALUE,
+		R: CHANNEL_MID_VALUE,
+		'1': CHANNEL_MIN_VALUE,
+		'2': CHANNEL_MIN_VALUE,
+		'3': CHANNEL_MIN_VALUE,
+		'4': CHANNEL_MIN_VALUE
+	},
     
     // First the vertical axis, then the horizontal:
 /*    gimbals = [
         ["throttle", "yaw"],
         ["pitch", "roll"],
     ],*/
-    gimbals = [
-        ["T", "R"],
-        ["E", "A"],
-    ];
+	gimbals = [
+		["T", "R"],
+		["E", "A"],
+	];
 
 
 var gimbalElems = null;
@@ -51,9 +53,19 @@ var STATUS = {
 	connected: false,
 	enableTX: false
 }
+var CONFIG = {
+	url: 'tcp://192.168.4.1:2323',
+//	url: 'tcp://192.168.1.60:2323',
+	droneCh: 'TREA1234',
+	ctrlCh: 'TREA',
+	autoCenter: [0,1],
+}
 var transmitTimer = null;
 
 $(document).ready(function() {
+
+	loadConfig()
+	updateConfig()
 
 	gimbalElems = [$('.control-gimbal.left'),$('.control-gimbal.right')]
 	gimbalSize = $(gimbalElems[0]).height()
@@ -62,7 +74,7 @@ $(document).ready(function() {
 		(function(ele, i){
 			var tid = null;
 			ele.on('touchstart mousedown', function(e) {
-				e.preventDefault()
+//				e.preventDefault()
 				if(e.changedTouches){
 					tid = e.changedTouches[0].identifier
 				}
@@ -78,7 +90,7 @@ $(document).ready(function() {
 				ele.off('touchmove mousemove', handleGimbalDrag);
 //console.log(stickValues)
 				// auto center
-				stickValues[gimbals[i][0]] = CHANNEL_MID_VALUE;
+				if(CONFIG.autoCenter[i]) stickValues[gimbals[i][0]] = CHANNEL_MID_VALUE;
 				stickValues[gimbals[i][1]] = CHANNEL_MID_VALUE;
 			});
 		})($(gimbalElems[i]), i)
@@ -96,6 +108,12 @@ $(document).ready(function() {
 			disconnect()
 		}
 	})
+	$('#configModal span.close').on('click', function(e){
+		$('#configModal').hide()
+	})
+	$('#configicon').on('click', function(e){
+			$('#configModal').show()
+	})
 	$(document).on('click', function(e){
 //		console.log(e.target, $(e.target).hasClass('modal'))
 		var target = $(e.target)
@@ -103,23 +121,73 @@ $(document).ready(function() {
 			target.hide()
 		}
 	})
-//	$('#connectUrl').val('tcp://192.168.4.1:2323')
-	$('#connectUrl').val('tcp://192.168.1.60:2323')
+
+	$('#connectUrl').val(CONFIG.url)
 	$('#connectBtn').on('click', function(e){
 		if(!STATUS.connected){
 			if(!STATUS.connecting){
-				var url = $('#connectUrl').val()
+				var url = $('#connectUrl').val() || 'tcp://192.168.4.1:2323'
 				console.log('connectBtn', url)
 				STATUS.connecting = true
 				STATUS.connected = false
 				serial.connect(url, {bitrate: 115200}, onOpen)
+
+				CONFIG.url = url
+				window.localStorage.setItem('CONFIG', JSON.stringify(CONFIG))
 				return
 			}
 		}
 		disconnect()
 	})
 
+	$('#saveConfig').on('click', function(e){
+		CONFIG.droneCh = $('#droneCh').val() || 'TREA1234'
+		CONFIG.ctrlCh = $('#ctrlCh').val() || 'TREA'
+
+		var autoCenter = [1,1]
+		autoCenter[0] = ($('#lauto').is(":checked")) ? 1 : 0;
+		autoCenter[1] = ($('#rauto').is(":checked")) ? 1 : 0;
+		CONFIG.autoCenter = autoCenter
+
+		console.log('CONFIG', CONFIG)
+		window.localStorage.setItem('CONFIG', JSON.stringify(CONFIG))
+
+		updateConfig()
+		$('#configModal').hide()
+	})
+
 })
+
+function loadConfig() {
+	var conf = JSON.parse(window.localStorage.getItem('CONFIG'))
+	if(conf){
+		CONFIG = conf
+	}
+	$('#droneCh').val(CONFIG.droneCh)
+	$('#ctrlCh').val(CONFIG.ctrlCh)
+	$('#connectUrl').val(CONFIG.url)
+
+	$('#lauto').attr('checked', !!(CONFIG.autoCenter[0]))
+	$('#rauto').attr('checked', !!(CONFIG.autoCenter[1]))
+}
+
+function updateConfig() {
+	// set gimbals channel
+	var ctrlCh = CONFIG.ctrlCh
+	if(ctrlCh.length == 4){
+		gimbals = [
+			[ctrlCh[0], ctrlCh[1]],
+			[ctrlCh[2], ctrlCh[3]]
+		]
+	}
+
+	// set encode channel
+	var droneCh = CONFIG.droneCh
+	for(var i=0; i<droneCh.length; i++){
+//		console.log(droneCh[i], i)
+		channelMSPIndexes[droneCh[i]] = i
+	}
+}
 
 function updateUI() {
 	updateControlPositions()
