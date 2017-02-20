@@ -6,7 +6,7 @@
 	<meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'"> <!-- TODO: more specific -->
 	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
 	<link type="text/css" rel="stylesheet" href="./index.css" media="all" />
-<script src="http://192.168.1.145:8080/target/target-script-min.js#anonymous"></script>
+<!--<script src="http://192.168.1.145:8080/target/target-script-min.js#anonymous"></script>-->
 	<script type="text/javascript" src="cordova.js"></script>
 	<script type="text/javascript" src="./js/lib/jquery-3.1.1.slim.min.js"></script>
 	<script type="text/javascript" src="./js/injected_methods.js"></script>
@@ -15,6 +15,7 @@
 	<script type="text/javascript" src="./js/msp/MSPCodes.js"></script>
 	<script type="text/javascript" src="./js/msp.js"></script>
 	<script type="text/javascript" src="./js/msp/MSPHelper.js"></script>
+	<script type="text/javascript" src="./js/MahonyAHRS.js"></script>
 	<script type="text/javascript" src="./index.js"></script>
 	<title></title>
 </head>
@@ -31,7 +32,7 @@
 			<button class="status info" id="flymode">---</button>
 			<button class="status" id="cycleTime">cycle: 0</button>
 			<button class="status" id="cpuload">cpu: 0%</button>
-			<button class="status" id="rateBtn">rate: 30%</button>
+			<button class="status" id="rateBtn">rate: --%</button>
 
 			<div id="configicon" class="configicon" i18n_title="mainHelpConfig"></div>
 		</div>

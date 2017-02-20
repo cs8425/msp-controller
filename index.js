@@ -4,6 +4,7 @@ var
 	CHANNEL_MIN_VALUE = 1000,
 	CHANNEL_MID_VALUE = 1500,
 	CHANNEL_MAX_VALUE = 2000,
+	CHANNEL_RNG_VALUE = CHANNEL_MAX_VALUE - CHANNEL_MIN_VALUE,
 
 	// What's the index of each channel in the MSP channel list?
 	// drone >> receiver >> channel map
@@ -53,11 +54,16 @@ var STATUS = {
 	connected: false,
 	enableTX: false,
 	mode: [],
-	rate: 0.3
+	rate: 0.15,
+	accOK: false,
+	accEn: false,
+	acc: [0,0,0],
+	quaternionNow: [1,0,0,0],
+	quaternionBase: [1,0,0,0],
+	accelerometerID: null
 }
 var SAVE = {
 	url: 'tcp://192.168.4.1:2323',
-//	url: 'tcp://192.168.1.60:2323',
 	droneCh: 'TREA1234',
 	ctrlCh: 'TREA',
 	autoCenter: [0,1],
@@ -67,7 +73,8 @@ var SAVE = {
 		[1100,1900],
 		[1100,1900]
 	],
-	rates: [0.3, 0.6, 1.0]
+	rates: [0.15, 0.3, 0.6, 1.0],
+	gyroCtrl: [0,0]
 }
 var transmitTimer = null;
 
@@ -79,11 +86,26 @@ $(document).ready(function() {
 	gimbalElems = [$('.control-gimbal.left'),$('.control-gimbal.right')]
 	gimbalSize = $(gimbalElems[0]).height()
 
+	if(navigator.accelerometer){
+		STATUS.last_received_acc_timestamp = Date.now()
+		STATUS.accelerometerID = navigator.accelerometer.watchAcceleration(updateAHRS, null, {frequency: 25});
+	}
+
 	for(var i=0; i<gimbalElems.length; i++){
 		(function(ele, i){
 			var tid = null;
 			ele.on('touchstart mousedown', function(e) {
 				e.preventDefault()
+
+				// has enable gyroCtrl
+				if(STATUS.accOK && SAVE.gyroCtrl[i]){
+					var q = STATUS.quaternionNow
+					STATUS.quaternionBase = [ q[0], q[1], q[2], q[3] ]
+					STATUS.accEn = true
+					return
+				}
+
+				// else use touch
 				if(e.changedTouches){
 					tid = e.changedTouches[0].identifier
 				}
@@ -95,6 +117,9 @@ $(document).ready(function() {
 
 			ele.on('touchend mouseup', function(e) {
 				e.preventDefault()
+
+				STATUS.accEn = false
+
 				tid = null
 				ele.off('touchmove mousemove', handleGimbalDrag);
 //console.log(stickValues)
@@ -166,6 +191,7 @@ $(document).ready(function() {
 
 	var rateClicks = 1;
 	var rateBtn = $('#rateBtn')
+	rateBtn.text('rate: ' + Math.round(STATUS.rate * 100) + '%')
 	rateBtn.on('click touchend', function(e){
 		if(('ontouchstart' in window) && (e.type == 'click')){
 			return false
@@ -222,7 +248,9 @@ function loadConfig() {
 		[1100,1900]
 	]
 
-	SAVE.rates = [0.3, 0.6, 1.0]
+	SAVE.rates = [0.15, 0.3, 0.6, 1.0]
+
+	SAVE.gyroCtrl = [0,1]
 }
 
 function updateConfig() {
@@ -250,6 +278,33 @@ function updateConfig() {
 }
 
 function updateUI() {
+	// has enable gyroCtrl
+	if(STATUS.accOK && STATUS.accEn){
+		for(var i=0; i<gimbalElems.length; i++){
+			if(SAVE.gyroCtrl[i]){
+				// calc delta rotate
+				// QTransition = QFinal * (QInitial^(-1))
+				var qDelta = [0,0,0,0]
+				var q = STATUS.quaternionBase
+				var invBased = [ q[0], -q[1], -q[2], -q[3] ]
+				q_normalize(invBased, invBased)
+				q_multiply(STATUS.quaternionNow, invBased, qDelta)
+
+				var rpy = [0,0,0]
+				q2euler(qDelta, rpy)
+//console.log('qDelta', qDelta)
+//q2euler(STATUS.quaternionNow,[0,0,0])
+//console.log('rpyDelta', rpy)
+
+				// max 35.0 deg
+				var scale = CHANNEL_RNG_VALUE / 35.0
+				var r = rpy[0] * scale * STATUS.rate + CHANNEL_MID_VALUE
+				var p = rpy[1] * scale * STATUS.rate + CHANNEL_MID_VALUE
+				stickValues[gimbals[i][0]] = Math.min(Math.max(p, CHANNEL_MIN_VALUE), CHANNEL_MAX_VALUE)
+				stickValues[gimbals[i][1]] = Math.min(Math.max(r, CHANNEL_MIN_VALUE), CHANNEL_MAX_VALUE)
+			}
+		}
+	}
 	updateControlPositions()
 
 	var active = ((Date.now() - STATUS.last_received_timestamp) < 500);
@@ -264,6 +319,21 @@ function updateUI() {
 	}
 
 	window.requestAnimationFrame(updateUI)
+}
+
+function updateAHRS(acc) {
+	var dt = (Date.now() - STATUS.last_received_acc_timestamp) / 1000.0
+	STATUS.last_received_acc_timestamp = Date.now()
+
+	STATUS.acc[0] = acc.x
+	STATUS.acc[1] = acc.y
+	STATUS.acc[2] = acc.z
+
+	// yee, I'm lazy :).
+	mahonyAHRSupdateIMU(STATUS.quaternionNow, acc, dt)
+//	console.log('quaternionNow', STATUS.quaternionNow)
+
+	STATUS.accOK = true
 }
 
 function handleGimbalDrag(e) {
@@ -295,11 +365,11 @@ function handleGimbalDrag(e) {
 function stickPortionToChannelValue(portion) {
 	portion = Math.min(Math.max(portion, 0.0), 1.0);
 
-	return Math.round(portion * (CHANNEL_MAX_VALUE - CHANNEL_MIN_VALUE) + CHANNEL_MIN_VALUE);
+	return Math.round(portion * (CHANNEL_RNG_VALUE) + CHANNEL_MIN_VALUE);
 }
 
 function channelValueToStickPortion(channel) {
-	return (channel - CHANNEL_MIN_VALUE) / (CHANNEL_MAX_VALUE - CHANNEL_MIN_VALUE);
+	return (channel - CHANNEL_MIN_VALUE) / (CHANNEL_RNG_VALUE);
 }
 
 function updateControlPositions() {
@@ -350,7 +420,7 @@ function transmitChannels() {
 }
 
 function update_packet_error(caller) {
-    $('span.packet-error').html(caller.packet_error);
+// TODO: show packet_error `caller.packet_error`
 }
 
 function onOpen(openInfo) {

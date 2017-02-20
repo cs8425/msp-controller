@@ -1,5 +1,15 @@
 # MSP-Controller of Cordova-based app
 
+# Warning !!
+## Currently command go through TCP, might freeze if WiFi signal too weak.
+## Use it carefully!!
+
+### TODO
+	- [ ] trim buttons/slides
+	- [ ] More detailed setting page
+	- [ ] Auto get drone's RX map (by `MSP_RX_MAP`)
+
+
 ### Build you self
 1. create a cordova project: `cordova create hello com.example.hello HelloWorld`
 2. cd in to project directory
