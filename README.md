@@ -5,9 +5,9 @@
 ## Use it carefully!!
 
 ### TODO
-	- [ ] trim buttons/slides
-	- [ ] More detailed setting page
-	- [ ] Auto get drone's RX map (by `MSP_RX_MAP`)
+ - [ ] trim buttons/slides
+ - [ ] More detailed setting page
+ - [ ] Auto get drone's RX map (by `MSP_RX_MAP`)
 
 
 ### Build you self

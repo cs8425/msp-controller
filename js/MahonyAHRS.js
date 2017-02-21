@@ -120,6 +120,121 @@ function mahonyAHRSupdateIMU(q, acc, dt) {
 	q[3] = q3
 }
 
+// q = [q0, q1, q2, q3] (w, x, y, z)
+// acc = {x, y, z}
+// dt = s (1.0 / Hz)
+var last_acc = [0,0,0]
+function myAHRSupdateIMU(q, acc, dt) {
+	var q0 = q[0]
+	var q1 = q[1]
+	var q2 = q[2]
+	var q3 = q[3]
+
+	var ux = acc.x
+	var uy = acc.y
+	var uz = acc.z
+
+	var vx = last_acc[0]
+	var vy = last_acc[1]
+	var vz = last_acc[2]
+
+	var recipNorm
+
+// from http://webcache.googleusercontent.com/search?q=cache:BhqKfm1NVhMJ:lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final+&cd=3&hl=zh-TW&ct=clnk&gl=tw
+//	var norm_u_norm_v = Math.sqrt(dot(u, u) * dot(v, v));
+//	var real_part = norm_u_norm_v + dot(u, v);
+	var norm_u_norm_v = Math.sqrt((ux*ux + uy*uy + uz*uz) * (vx*vx + vy*vy + vz*vz))
+	var w0 = norm_u_norm_v + (ux*vx + uy*vy + uz*vz);
+	var w1, w2, w3
+
+	if (w0 < 1.0e-6 * norm_u_norm_v) {
+		/* If u and v are exactly opposite, rotate 180 degrees
+		* around an arbitrary orthogonal axis. Axis normalisation
+		* can happen later, when we normalise the quaternion. */
+		w0 = 0.0;
+//		w = abs(u.x) > abs(u.z) ? vec3(-u.y, u.x, 0.f) : vec3(0.f, -u.z, u.y);
+		if(Math.abs(ux) > Math.abs(uz)){
+			//w = [-uy, ux, 0]
+			w1 = -uy
+			w2 = ux
+			w3 = 0
+		}else{
+			//w = [0, -uz, uy]
+			w1 = 0
+			w2 = -uz
+			w3 = uy
+		}
+	}else{
+		/* Otherwise, build quaternion the standard way. */
+		//w = cross(u, v);
+			w1 = uy*vz - vy*uz
+			w2 = uz*vx - vz*ux
+			w3 = ux*vy - vx*uy
+	}
+
+	// Normalise quaternion
+	recipNorm = Math.pow(w0 * w0 + w1 * w1 + w2 * w2 + w3 * w3, -0.5);
+	w0 *= recipNorm;
+	w1 *= recipNorm;
+	w2 *= recipNorm;
+	w3 *= recipNorm;
+
+	last_acc[0] = ux
+	last_acc[1] = uy
+	last_acc[2] = uz
+
+	q_multiply(q, [w0, w1, w2, w3], q)
+}
+
+function accRot(v, u, qout) {
+	var ux = u[0]
+	var uy = u[1]
+	var uz = u[2]
+
+	var vx = v[0]
+	var vy = v[1]
+	var vz = v[2]
+
+	var recipNorm
+
+// from http://webcache.googleusercontent.com/search?q=cache:BhqKfm1NVhMJ:lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final+&cd=3&hl=zh-TW&ct=clnk&gl=tw
+	var norm_u_norm_v = Math.sqrt((ux*ux + uy*uy + uz*uz) * (vx*vx + vy*vy + vz*vz))
+	var w0 = norm_u_norm_v + (ux*vx + uy*vy + uz*vz);
+	var w1, w2, w3
+
+	if (w0 < 1.0e-6 * norm_u_norm_v) {
+		/* If u and v are exactly opposite, rotate 180 degrees
+		* around an arbitrary orthogonal axis. Axis normalisation
+		* can happen later, when we normalise the quaternion. */
+		w0 = 0.0;
+//		w = abs(u.x) > abs(u.z) ? vec3(-u.y, u.x, 0.f) : vec3(0.f, -u.z, u.y);
+		if(Math.abs(ux) > Math.abs(uz)){
+			//w = [-uy, ux, 0]
+			w1 = -uy
+			w2 = ux
+			w3 = 0
+		}else{
+			//w = [0, -uz, uy]
+			w1 = 0
+			w2 = -uz
+			w3 = uy
+		}
+	}else{
+		/* Otherwise, build quaternion the standard way. */
+		//w = cross(u, v);
+			w1 = uy*vz - vy*uz
+			w2 = uz*vx - vz*ux
+			w3 = ux*vy - vx*uy
+	}
+
+	// Normalise quaternion
+	recipNorm = Math.pow(w0 * w0 + w1 * w1 + w2 * w2 + w3 * w3, -0.5);
+	qout[0] = w0 * recipNorm;
+	qout[1] = w1 * recipNorm;
+	qout[2] = w2 * recipNorm;
+	qout[3] = w3 * recipNorm;
+}
+
 // from https://github.com/mrdoob/three.js/blob/dev/src/math/Quaternion.js
 function q_length(q) {
 	return Math.sqrt( q[3] * q[3] + q[0] * q[0] + q[1] * q[1] + q[2] * q[2] )
@@ -169,6 +284,37 @@ function q2euler(q, rpy) {
 	var qz = q[3]
 	var RAD2DEG = 360.0 / Math.PI
 
+/*
+imuComputeRotationMatrix(void)
+{
+    float q1q1 = sq(q1);
+    float q2q2 = sq(q2);
+    float q3q3 = sq(q3);
+
+    float q0q1 = q0 * q1;
+    float q0q2 = q0 * q2;
+    float q0q3 = q0 * q3;
+    float q1q2 = q1 * q2;
+    float q1q3 = q1 * q3;
+    float q2q3 = q2 * q3;
+
+    rMat[0][0] = 1.0f - 2.0f * q2q2 - 2.0f * q3q3;
+    rMat[0][1] = 2.0f * (q1q2 + -q0q3);
+    rMat[0][2] = 2.0f * (q1q3 - -q0q2);
+
+    rMat[1][0] = 2.0f * (q1q2 - -q0q3);
+    rMat[1][1] = 1.0f - 2.0f * q1q1 - 2.0f * q3q3;
+    rMat[1][2] = 2.0f * (q2q3 + -q0q1);
+
+    rMat[2][0] = 2.0f * (q1q3 + -q0q2);
+    rMat[2][1] = 2.0f * (q2q3 - -q0q1);
+    rMat[2][2] = 1.0f - 2.0f * q1q1 - 2.0f * q2q2;
+}
+*/
+//attitude.values.roll = lrintf(atan2f(rMat[2][1], rMat[2][2]) * (1800.0f / M_PIf));
+//attitude.values.pitch = lrintf(((0.5f * M_PIf) - acosf(-rMat[2][0])) * (1800.0f / M_PIf));
+//attitude.values.yaw = lrintf((-atan2f(rMat[1][0], rMat[0][0]) * (1800.0f / M_PIf) + magneticDeclination));
+
 	var ysqr = qy * qy
 
 	// roll (x-axis rotation)
@@ -180,7 +326,8 @@ function q2euler(q, rpy) {
 	var t2 = +2.0 * (qw * qy - qz * qx);
 	t2 = t2 > 1.0 ? 1.0 : t2;
 	t2 = t2 < -1.0 ? -1.0 : t2;
-	rpy[1] = Math.asin(t2) * RAD2DEG
+//	rpy[1] = Math.asin(t2) * RAD2DEG
+	rpy[1] = (0.5*Math.PI - Math.acos(t2)) * RAD2DEG
 
 	// yaw (z-axis rotation)
 	var t3 = +2.0 * (qw * qz + qx * qy);

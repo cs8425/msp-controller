@@ -58,6 +58,7 @@ var STATUS = {
 	accOK: false,
 	accEn: false,
 	acc: [0,0,0],
+	accBase: [0,0,0],
 	quaternionNow: [1,0,0,0],
 	quaternionBase: [1,0,0,0],
 	accelerometerID: null
@@ -87,8 +88,18 @@ $(document).ready(function() {
 	gimbalSize = $(gimbalElems[0]).height()
 
 	if(navigator.accelerometer){
-		STATUS.last_received_acc_timestamp = Date.now()
-		STATUS.accelerometerID = navigator.accelerometer.watchAcceleration(updateAHRS, null, {frequency: 25});
+		var startAcc = function(){
+			if(STATUS.accelerometerID) navigator.accelerometer.clearWatch(STATUS.accelerometerID)
+			STATUS.accelerometerID = navigator.accelerometer.watchAcceleration(updateAHRS, null, {frequency: 25})
+			STATUS.last_received_acc_timestamp = Date.now()
+		}
+		startAcc()
+
+		document.addEventListener('pause', function(){
+			navigator.accelerometer.clearWatch(STATUS.accelerometerID)
+			STATUS.accelerometerID = null
+		}, false)
+		document.addEventListener('resume', startAcc, false)
 	}
 
 	for(var i=0; i<gimbalElems.length; i++){
@@ -101,6 +112,9 @@ $(document).ready(function() {
 				if(STATUS.accOK && SAVE.gyroCtrl[i]){
 					var q = STATUS.quaternionNow
 					STATUS.quaternionBase = [ q[0], q[1], q[2], q[3] ]
+
+					var a = STATUS.acc
+					STATUS.accBase = [ a[0], a[1], a[2] ]
 					STATUS.accEn = true
 					return
 				}
@@ -285,10 +299,12 @@ function updateUI() {
 				// calc delta rotate
 				// QTransition = QFinal * (QInitial^(-1))
 				var qDelta = [0,0,0,0]
-				var q = STATUS.quaternionBase
-				var invBased = [ q[0], -q[1], -q[2], -q[3] ]
-				q_normalize(invBased, invBased)
-				q_multiply(STATUS.quaternionNow, invBased, qDelta)
+//				var q = STATUS.quaternionBase
+//				var invBased = [ q[0], -q[1], -q[2], -q[3] ]
+//				q_normalize(invBased, invBased)
+//				q_multiply(STATUS.quaternionNow, invBased, qDelta)
+
+				accRot(STATUS.accBase, STATUS.acc, qDelta)
 
 				var rpy = [0,0,0]
 				q2euler(qDelta, rpy)
@@ -330,7 +346,8 @@ function updateAHRS(acc) {
 	STATUS.acc[2] = acc.z
 
 	// yee, I'm lazy :).
-	mahonyAHRSupdateIMU(STATUS.quaternionNow, acc, dt)
+//	mahonyAHRSupdateIMU(STATUS.quaternionNow, acc, dt)
+	myAHRSupdateIMU(STATUS.quaternionNow, acc, dt)
 //	console.log('quaternionNow', STATUS.quaternionNow)
 
 	STATUS.accOK = true
