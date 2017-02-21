@@ -300,6 +300,7 @@ body {
 	margin: auto;
 	height: 85vh;
 	width: 90vw;
+	overflow: scroll;
 }
 
 /* The Close Button */

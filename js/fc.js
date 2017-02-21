@@ -62,7 +62,8 @@ var FC = {
             accelerometerTrims: [0, 0],
             name:          '',
             numProfiles:   3,
-            rateProfile:   0
+            rateProfile:   0,
+            RC_MAP:        'TAER1234',
         };
 
         BF_CONFIG = {

@@ -59,8 +59,6 @@ var STATUS = {
 	accEn: false,
 	acc: [0,0,0],
 	accBase: [0,0,0],
-	quaternionNow: [1,0,0,0],
-	quaternionBase: [1,0,0,0],
 	accelerometerID: null
 }
 var SAVE = {
@@ -75,32 +73,41 @@ var SAVE = {
 		[1100,1900]
 	],
 	rates: [0.15, 0.3, 0.6, 1.0],
-	gyroCtrl: [0,0]
+	gyroCtrl: [0,0],
+	maxAng: 60
 }
 var transmitTimer = null;
 
-$(document).ready(function() {
 
-	loadConfig()
-	updateConfig()
-
-	gimbalElems = [$('.control-gimbal.left'),$('.control-gimbal.right')]
-	gimbalSize = $(gimbalElems[0]).height()
-
+document.addEventListener('deviceready', function(e){
+	console.log('onDeviceready1', e, navigator.accelerometer)
 	if(navigator.accelerometer){
-		var startAcc = function(){
+		var startAcc = function(e){
+			console.log('onResume', e)
 			if(STATUS.accelerometerID) navigator.accelerometer.clearWatch(STATUS.accelerometerID)
 			STATUS.accelerometerID = navigator.accelerometer.watchAcceleration(updateAHRS, null, {frequency: 25})
 			STATUS.last_received_acc_timestamp = Date.now()
 		}
 		startAcc()
 
-		document.addEventListener('pause', function(){
+		document.addEventListener('pause', function(e){
+			console.log('onPause', e)
 			navigator.accelerometer.clearWatch(STATUS.accelerometerID)
 			STATUS.accelerometerID = null
 		}, false)
 		document.addEventListener('resume', startAcc, false)
 	}
+}, false)
+
+$(document).ready(function() {
+console.log('onDocumentReady')
+
+	loadConfig()
+	updateConfig()
+	updateConfigUI()
+
+	gimbalElems = [$('.control-gimbal.left'),$('.control-gimbal.right')]
+	gimbalSize = $(gimbalElems[0]).height()
 
 	for(var i=0; i<gimbalElems.length; i++){
 		(function(ele, i){
@@ -110,9 +117,6 @@ $(document).ready(function() {
 
 				// has enable gyroCtrl
 				if(STATUS.accOK && SAVE.gyroCtrl[i]){
-					var q = STATUS.quaternionNow
-					STATUS.quaternionBase = [ q[0], q[1], q[2], q[3] ]
-
 					var a = STATUS.acc
 					STATUS.accBase = [ a[0], a[1], a[2] ]
 					STATUS.accEn = true
@@ -196,10 +200,26 @@ $(document).ready(function() {
 		autoCenter[1] = ($('#rauto').is(":checked")) ? 1 : 0;
 		SAVE.autoCenter = autoCenter
 
-		console.log('SAVE', SAVE)
-		window.localStorage.setItem('SAVE', JSON.stringify(SAVE))
+		var gyroCtrl = [0,0]
+		gyroCtrl[0] = ($('#lgyro').is(":checked")) ? 1 : 0;
+		gyroCtrl[1] = ($('#rgyro').is(":checked")) ? 1 : 0;
+		SAVE.gyroCtrl = gyroCtrl
+
+		var maxAng = parseFloat($('#maxAng').val())
+		SAVE.maxAng = (maxAng < 10)? 10.0 : ( (maxAng > 85)? 85 : maxAng )
+
+		var rates = $('#rates').val().split(',')
+		for(var i=0; i<rates.length; i++){
+			rates[i] = parseFloat(rates[i]) || 0.3
+		}
+		SAVE.rates = rates
+
+		//$('#configAUX > input')
+
+		saveConfig()
 
 		updateConfig()
+		updateConfigUI()
 		$('#configModal').hide()
 	})
 
@@ -220,7 +240,7 @@ $(document).ready(function() {
 
 	for(var i=1; i<5; i++){
 		(function(i){
-			var color = ['success', 'info', 'warning']
+			var color = ['success', 'info', 'warning', 'danger']
 			var auxClicks = 1;
 			var auxBtn = $('#aux' + i)
 			auxBtn.on('click touchend', function(e){
@@ -248,12 +268,6 @@ function loadConfig() {
 	if(conf){
 		SAVE = conf
 	}
-	$('#droneCh').val(SAVE.droneCh)
-	$('#ctrlCh').val(SAVE.ctrlCh)
-	$('#connectUrl').val(SAVE.url)
-
-	$('#lauto').attr('checked', !!(SAVE.autoCenter[0]))
-	$('#rauto').attr('checked', !!(SAVE.autoCenter[1]))
 
 	SAVE.aux = [
 		[1100,1900],
@@ -261,10 +275,11 @@ function loadConfig() {
 		[1100,1900],
 		[1100,1900]
 	]
+}
 
-	SAVE.rates = [0.15, 0.3, 0.6, 1.0]
-
-	SAVE.gyroCtrl = [0,1]
+function saveConfig() {
+	console.log('SAVE', SAVE)
+	window.localStorage.setItem('SAVE', JSON.stringify(SAVE))
 }
 
 function updateConfig() {
@@ -291,31 +306,37 @@ function updateConfig() {
 	}
 }
 
+function updateConfigUI() {
+	$('#droneCh').val(SAVE.droneCh)
+	$('#ctrlCh').val(SAVE.ctrlCh)
+	$('#connectUrl').val(SAVE.url)
+	$('#maxAng').val(SAVE.maxAng)
+
+	$('#lauto').attr('checked', !!(SAVE.autoCenter[0]))
+	$('#rauto').attr('checked', !!(SAVE.autoCenter[1]))
+	$('#lgyro').attr('checked', !!(SAVE.gyroCtrl[0]))
+	$('#rgyro').attr('checked', !!(SAVE.gyroCtrl[1]))
+
+	$('#rates').val(SAVE.rates.join(','))
+}
+
 function updateUI() {
 	// has enable gyroCtrl
 	if(STATUS.accOK && STATUS.accEn){
 		for(var i=0; i<gimbalElems.length; i++){
 			if(SAVE.gyroCtrl[i]){
 				// calc delta rotate
-				// QTransition = QFinal * (QInitial^(-1))
 				var qDelta = [0,0,0,0]
-//				var q = STATUS.quaternionBase
-//				var invBased = [ q[0], -q[1], -q[2], -q[3] ]
-//				q_normalize(invBased, invBased)
-//				q_multiply(STATUS.quaternionNow, invBased, qDelta)
-
 				accRot(STATUS.accBase, STATUS.acc, qDelta)
 
 				var rpy = [0,0,0]
 				q2euler(qDelta, rpy)
 //console.log('qDelta', qDelta)
-//q2euler(STATUS.quaternionNow,[0,0,0])
 //console.log('rpyDelta', rpy)
 
-				// max 35.0 deg
-				var scale = CHANNEL_RNG_VALUE / 35.0
-				var r = rpy[0] * scale * STATUS.rate + CHANNEL_MID_VALUE
-				var p = rpy[1] * scale * STATUS.rate + CHANNEL_MID_VALUE
+				var scale = CHANNEL_RNG_VALUE / (SAVE.maxAng * 2)
+				var r = rpy[0] * scale + CHANNEL_MID_VALUE
+				var p = rpy[1] * scale + CHANNEL_MID_VALUE
 				stickValues[gimbals[i][0]] = Math.min(Math.max(p, CHANNEL_MIN_VALUE), CHANNEL_MAX_VALUE)
 				stickValues[gimbals[i][1]] = Math.min(Math.max(r, CHANNEL_MIN_VALUE), CHANNEL_MAX_VALUE)
 			}
@@ -341,16 +362,18 @@ function updateAHRS(acc) {
 	var dt = (Date.now() - STATUS.last_received_acc_timestamp) / 1000.0
 	STATUS.last_received_acc_timestamp = Date.now()
 
-	STATUS.acc[0] = acc.x
-	STATUS.acc[1] = acc.y
-	STATUS.acc[2] = acc.z
-
-	// yee, I'm lazy :).
-//	mahonyAHRSupdateIMU(STATUS.quaternionNow, acc, dt)
-	myAHRSupdateIMU(STATUS.quaternionNow, acc, dt)
-//	console.log('quaternionNow', STATUS.quaternionNow)
-
-	STATUS.accOK = true
+// TODO: some better low pass filter
+	var oldAcc = STATUS.acc
+	var ax = acc.x
+	var ay = acc.y
+	var az = acc.z
+	var len = Math.sqrt(ax*ax + ay*ay + az*az) / 9.81
+	if((len > 0.7) && (len < 1.3)){
+		oldAcc[0] = oldAcc[0] * 0.35 + ax * 0.65
+		oldAcc[1] = oldAcc[1] * 0.35 + ay * 0.65
+		oldAcc[2] = oldAcc[2] * 0.35 + az * 0.65
+		STATUS.accOK = true
+	}
 }
 
 function handleGimbalDrag(e) {
@@ -477,7 +500,15 @@ function onOpen(openInfo) {
 
 								// continue as usually
 								// CONFIGURATOR.connectionValid = true;
-								onConnect();
+								//onConnect();
+								MSP.send_message(MSPCodes.MSP_RX_MAP, false, false, function () {
+									console.log('MSP_RX_MAP:', CONFIG.RC_MAP);
+
+									SAVE.droneCh = CONFIG.RC_MAP
+									updateConfig()
+									updateConfigUI()
+									onConnect();
+								});
 							});
 						});
 					});

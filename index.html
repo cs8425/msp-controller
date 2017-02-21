@@ -15,7 +15,7 @@
 	<script type="text/javascript" src="./js/msp/MSPCodes.js"></script>
 	<script type="text/javascript" src="./js/msp.js"></script>
 	<script type="text/javascript" src="./js/msp/MSPHelper.js"></script>
-	<script type="text/javascript" src="./js/MahonyAHRS.js"></script>
+	<script type="text/javascript" src="./js/math.js"></script>
 	<script type="text/javascript" src="./index.js"></script>
 	<title></title>
 </head>
@@ -110,14 +110,46 @@
 				</div>
 		</div>
 		<div>
+				<strong>left gimbal gyro Control:</strong>
+				<div class="onoffswitch">
+					<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="lgyro">
+					<label class="onoffswitch-label" for="lgyro">
+						<span class="onoffswitch-inner"></span>
+						<span class="onoffswitch-switch"></span>
+					</label>
+				</div>
+		</div>
+		<div>
+				<strong>right gimbal gyro Control:</strong>
+				<div class="onoffswitch">
+					<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="rgyro">
+					<label class="onoffswitch-label" for="rgyro">
+						<span class="onoffswitch-inner"></span>
+						<span class="onoffswitch-switch"></span>
+					</label>
+				</div>
+		</div>
+		<div>
+			<strong>gyro Control max angle:</strong>
+			<input type="text" id="maxAng" placeholder="60" />
+		</div>
+		<div>
+			<strong>drone RX map:</strong>
 			<input type="text" id="droneCh" placeholder="TREA1234" />
+		</div>
+		<div>
+			<strong>gimbal map:</strong>
 			<input type="text" id="ctrlCh" placeholder="TREA" />
 		</div>
+		<div>
+			<strong>Rate:</strong>
+			<input type="text" id="rates" placeholder="rate 100% = 1.0" value="0.15,0.30,0.60,1.0" />
+		</div>
 		<div id="configAUX">
-			<input type="text" placeholder="aux1" />
-			<input type="text" placeholder="aux2" />
-			<input type="text" placeholder="aux3" />
-			<input type="text" placeholder="aux4" />
+			<input type="text" placeholder="aux1" value="1100,1900" />
+			<input type="text" placeholder="aux2" value="1100,1900" />
+			<input type="text" placeholder="aux3" value="1100,1900" />
+			<input type="text" placeholder="aux4" value="1100,1900" />
 		</div>
 		<div>
 			<button id="saveConfig" class="button">Save</button>

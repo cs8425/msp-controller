@@ -250,6 +250,18 @@ MspHelper.prototype.process_data = function(dataHandler) {
                 for (var i = 0; i < data.byteLength; i++) {
                     RC_MAP.push(data.readU8());
                 }
+
+                // handle rcmap & rssi aux channel
+                var RC_MAP_Letters = ['A', 'E', 'R', 'T', '1', '2', '3', '4'];
+                var strBuffer = [];
+                for (var i = 0; i < RC_MAP.length; i++) {
+                    strBuffer[RC_MAP[i]] = RC_MAP_Letters[i];
+                }
+
+                // reconstruct
+                //var str = strBuffer.join('');
+                CONFIG.RC_MAP = strBuffer.join('')
+
                 break;
             case MSPCodes.MSP_SET_RX_MAP:
                 console.log('RCMAP saved');
