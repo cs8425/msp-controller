@@ -74,7 +74,8 @@ var SAVE = {
 	],
 	rates: [0.15, 0.3, 0.6, 1.0],
 	gyroCtrl: [0,0],
-	maxAng: 60
+	maxAng: 60,
+	yawDeadband: 100
 }
 var transmitTimer = null;
 
@@ -208,13 +209,25 @@ console.log('onDocumentReady')
 		var maxAng = parseFloat($('#maxAng').val())
 		SAVE.maxAng = (maxAng < 10)? 10.0 : ( (maxAng > 85)? 85 : maxAng )
 
+		var yawDeadband = parseInt($('#yawDeadband').val())
+		SAVE.yawDeadband = (yawDeadband < 0)? 0 : ( (yawDeadband > 450)? 450 : yawDeadband )
+
 		var rates = $('#rates').val().split(',')
 		for(var i=0; i<rates.length; i++){
 			rates[i] = parseFloat(rates[i]) || 0.3
 		}
 		SAVE.rates = rates
 
-		//$('#configAUX > input')
+		var auxs = $('#configAUX > input')
+		var aux = []
+		for(var i=0; i<auxs.length; i++){
+			var vals = $(auxs[i]).val().split(',')
+			for(var j=0; j<vals.length; j++){
+				vals[j] = parseInt(vals[j]) || 1500
+			}
+			aux.push(vals)
+		}
+		SAVE.aux = aux
 
 		saveConfig()
 
@@ -268,13 +281,6 @@ function loadConfig() {
 	if(conf){
 		SAVE = conf
 	}
-
-	SAVE.aux = [
-		[1100,1900],
-		[1100,1900],
-		[1100,1900],
-		[1100,1900]
-	]
 }
 
 function saveConfig() {
@@ -311,6 +317,7 @@ function updateConfigUI() {
 	$('#ctrlCh').val(SAVE.ctrlCh)
 	$('#connectUrl').val(SAVE.url)
 	$('#maxAng').val(SAVE.maxAng)
+	$('#yawDeadband').val(SAVE.yawDeadband)
 
 	$('#lauto').attr('checked', !!(SAVE.autoCenter[0]))
 	$('#rauto').attr('checked', !!(SAVE.autoCenter[1]))
@@ -318,6 +325,11 @@ function updateConfigUI() {
 	$('#rgyro').attr('checked', !!(SAVE.gyroCtrl[1]))
 
 	$('#rates').val(SAVE.rates.join(','))
+
+	var auxs = $('#configAUX > input')
+	for(var i=0; i<auxs.length; i++){
+		$(auxs[i]).val(SAVE.aux[i].join(','))
+	}
 }
 
 function updateUI() {
@@ -440,16 +452,27 @@ function transmitChannels() {
 		return;
 	}
 
-/*	if (!STATUS.enableTX) {
-		return;
-	}*/
-
 	for (var stickName in stickValues) {
 		var val = stickValues[stickName]
 
 		// only roll & pitch
 		if((stickName == 'E')||(stickName == 'A')){
 			val = Math.round((val - CHANNEL_MID_VALUE) * STATUS.rate + CHANNEL_MID_VALUE)
+		}
+
+		// yaw deadband
+		if(stickName == 'R'){
+			var yval = val - CHANNEL_MID_VALUE
+			var valabs = Math.abs(yval)
+			var deadband = SAVE.yawDeadband
+			if(valabs > deadband){
+				if(yval < 0){
+					val = -(valabs - deadband)
+				} else {
+					val = (valabs - deadband)
+				}
+			}
+			val += CHANNEL_MID_VALUE
 		}
 		channelValues[channelMSPIndexes[stickName]] = val;
 	}
