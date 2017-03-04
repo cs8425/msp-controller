@@ -206,10 +206,10 @@ console.log('onDocumentReady')
 		gyroCtrl[1] = ($('#rgyro').is(":checked")) ? 1 : 0;
 		SAVE.gyroCtrl = gyroCtrl
 
-		var maxAng = parseFloat($('#maxAng').val())
+		var maxAng = parseFloat($('#maxAng').val()) || 60
 		SAVE.maxAng = (maxAng < 10)? 10.0 : ( (maxAng > 85)? 85 : maxAng )
 
-		var yawDeadband = parseInt($('#yawDeadband').val())
+		var yawDeadband = parseInt($('#yawDeadband').val()) || 100
 		SAVE.yawDeadband = (yawDeadband < 0)? 0 : ( (yawDeadband > 450)? 450 : yawDeadband )
 
 		var rates = $('#rates').val().split(',')
