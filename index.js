@@ -471,6 +471,8 @@ function transmitChannels() {
 				} else {
 					val = (valabs - deadband)
 				}
+			} else {
+				val = 0
 			}
 			val += CHANNEL_MID_VALUE
 		}
