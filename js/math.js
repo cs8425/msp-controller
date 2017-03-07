@@ -62,7 +62,7 @@ function q2euler(q, rpy) {
 	var qx = q[1]
 	var qy = q[2]
 	var qz = q[3]
-	var RAD2DEG = 360.0 / Math.PI
+	var RAD2DEG = 180.0 / Math.PI
 
 	var ysqr = qy * qy
 

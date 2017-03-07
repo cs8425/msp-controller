@@ -209,8 +209,8 @@ console.log('onDocumentReady')
 		var maxAng = parseFloat($('#maxAng').val()) || 60
 		SAVE.maxAng = (maxAng < 10)? 10.0 : ( (maxAng > 85)? 85 : maxAng )
 
-		var yawDeadband = parseInt($('#yawDeadband').val()) || 100
-		SAVE.yawDeadband = (yawDeadband < 0)? 0 : ( (yawDeadband > 450)? 450 : yawDeadband )
+		var yawDeadband = parseFloat($('#yawDeadband').val()) || 0.1
+		SAVE.yawDeadband = (yawDeadband < 0)? 0 : ( (yawDeadband > 0.95)? 0.95 : yawDeadband )
 
 		var rates = $('#rates').val().split(',')
 		for(var i=0; i<rates.length; i++){
@@ -464,7 +464,7 @@ function transmitChannels() {
 		if(stickName == 'R'){
 			var yval = val - CHANNEL_MID_VALUE
 			var valabs = Math.abs(yval)
-			var deadband = SAVE.yawDeadband
+			var deadband = CHANNEL_RNG_VALUE * SAVE.yawDeadband
 			if(valabs > deadband){
 				if(yval < 0){
 					val = -(valabs - deadband)
