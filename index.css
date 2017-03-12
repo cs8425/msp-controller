@@ -2,14 +2,14 @@ body {
     font-family: 'Segoe UI', Tahoma, sans-serif;
     font-size: 12px;
     color: #303030;
-    margin: 10px 2px;
-	height:calc(100vh - 20px);
+    margin: 5px 2px;
+	height:calc(100vh - 10px);
 }
 
 #table {
 	display:table;
 	width:100%;
-/*	height:calc(100vh - 20px);*/
+/*	height:calc(100vh - 10px);*/
 	border: 0px;
 	margin: 0px;
 }
@@ -52,7 +52,7 @@ body {
 	vertical-align: middle;
 	max-width:5vh;*/
 	max-width:calc((100vw - 80px) * 0.1 * 0.5);
-	height: calc((80vh - 10px) * 0.8);
+	height: calc(80vh - 10px);
 	max-height: calc((100vw - 80px) * 0.35);
 }
 .cell.htrim {
@@ -64,7 +64,7 @@ body {
 	vertical-align: middle;
 	height:2vh;
 */
-	width: calc((80vh - 10px) * 0.8);
+	width: calc(80vh - 10px);
 	max-width: calc((100vw - 80px) * 0.35);
     padding-left: 1em;
     padding-right: 1em;
@@ -72,7 +72,7 @@ body {
 .cell.center, button.button.center {
 /*	display:none;*/
 	max-width: calc((100vw - 80px) * 0.1);
-	margin: calc((80vh - 10px) * 0.8 * 0.02) auto;
+	margin: calc((80vh - 10px) * 0.02) auto;
 }
 .trim.btn {
 	background-color: #2196F3;
@@ -97,11 +97,10 @@ body {
 
 .control-gimbal {
     position: relative;
-	height: calc((80vh - 10px) * 0.8);
-	width: calc((80vh - 10px) * 0.8);
+	height: calc(80vh - 10px);
+	width: calc(80vh - 10px);
 	max-height: calc((100vw - 80px) * 0.35);
 	max-width: calc((100vw - 80px) * 0.35);
-/*	padding-right: calc((80vh - 10px ) * 0.9);*/
     background-color: #eee;
     margin-left: 1em;
     margin-right: 1em;

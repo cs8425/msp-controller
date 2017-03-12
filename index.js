@@ -59,7 +59,10 @@ var STATUS = {
 	accEn: false,
 	acc: [0,0,0],
 	accBase: [0,0,0],
-	accelerometerID: null
+	accelerometerID: null,
+	last_received_acc_timestamp: 0,
+	last_received_timestamp: 0,
+	last_send_timestamp: 0
 }
 var SAVE = {
 	url: 'tcp://192.168.4.1:2323',
@@ -429,9 +432,9 @@ function updateUI() {
 
 	var active = ((Date.now() - STATUS.last_received_timestamp) < 500);
 	if(active){
-		$(".linkicon").addClass('active')
+		$('.linkicon').addClass('active')
 	}else{
-		$(".linkicon").removeClass('active')
+		$('.linkicon').removeClass('active')
 	}
 
 	window.requestAnimationFrame(updateUI)
@@ -499,7 +502,7 @@ function updateControlPositions() {
 		for (var gimbalIndex in gimbals) {
 			var gimbal = gimbals[gimbalIndex]
 			var gimbalElem = gimbalElems[gimbalIndex]
-			var stickElem = $($(".control-stick")[gimbalIndex])
+			var stickElem = $($('.control-stick')[gimbalIndex])
 
 			if (gimbal[0] == stickName) {
 				stickElem.css('top', (1.0 - channelValueToStickPortion(stickValue)) * gimbalSize + "px");
@@ -638,8 +641,8 @@ function onClosed(result) {
 	}
 
 	$('#rxicon').removeClass('active')
-	$(".armedicon").removeClass('active')
-	$(".failsafeicon").removeClass('active')
+	$('.armedicon').removeClass('active')
+	$('.failsafeicon').removeClass('active')
 	STATUS.connecting = false
 	STATUS.connected = false
 
@@ -666,15 +669,15 @@ function updateLiveStats() {
 		}
 		if (AUX_CONFIG[i] == 'ARM') {
 			if (bit_check(CONFIG.mode, i))
-				$(".armedicon").addClass('active')
+				$('.armedicon').addClass('active')
 			else
-				$(".armedicon").removeClass('active')
+				$('.armedicon').removeClass('active')
 		}
 		if (AUX_CONFIG[i] == 'FAILSAFE') {
 			if (bit_check(CONFIG.mode, i))
-				$(".failsafeicon").addClass('active')
+				$('.failsafeicon').addClass('active')
 			else
-				$(".failsafeicon").removeClass('active')
+				$('.failsafeicon').removeClass('active')
 		}
 	}
 	STATUS.mode = mode
@@ -692,6 +695,9 @@ function updateLiveStats() {
 		cpu.removeClass('warning').removeClass('danger')
 	}
 
+	var ping = STATUS.ping = STATUS.last_received_timestamp - STATUS.last_send_timestamp
+	$('#ping').text('ping: ' + ping)
+
 	setTimeout(function(){
 		if(!STATUS.connected) return
 		MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false)
@@ -699,6 +705,8 @@ function updateLiveStats() {
 		MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats)
 		// else
 //		MSP.send_message(MSPCodes.MSP_STATUS, false, false);
+
+		STATUS.last_send_timestamp = Date.now()
 	}, 200)
 }
 
