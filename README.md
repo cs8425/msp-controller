@@ -4,10 +4,28 @@
 ## Currently command go through TCP, might freeze if WiFi signal too weak.
 ## Use it carefully!!
 
+### Some Screenshots
+
+![startup](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot001.png)
+
+![connected](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot002.png)
+
+![armed](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot003.png)
+
+![connection popup](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot004.png)
+
+![calibration popup](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot005.png)
+
+##### config popup
+
+![config](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot006.png)
+
+![config](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot007.png)
+
 ### TODO
- - [ ] trim buttons/slides
+ - [x] <del>trim buttons/slides</del> done!
  - [ ] More detailed setting page
- - [x] Auto get drone's RX map (by `MSP_RX_MAP`)
+ - [x] <del>Auto get drone's RX map (by `MSP_RX_MAP`)</del> done!
 
 
 ### Build you self
