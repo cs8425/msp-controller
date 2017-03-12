@@ -29,20 +29,21 @@
 			<div class="failsafeicon" i18n_title="mainHelpFailsafe"></div>
 			<div class="linkicon" i18n_title="mainHelpLink"></div>
 
-			<button class="status info" id="flymode">---</button>
 			<button class="status" id="cycleTime">cycle: 0</button>
 			<button class="status" id="cpuload">cpu: 0%</button>
 			<button class="status" id="rateBtn">rate: --%</button>
+			<button class="status info" id="flymode">---</button>
 
 			<div id="configicon" class="configicon" i18n_title="mainHelpConfig"></div>
+			<div id="adjusticon" class="adjusticon" i18n_title="mainHelpAdjust"></div>
 		</div>
 	</div>
 	<div class="group">
 		<div class="row content">
 			<div class="cell trim vtrim">
-				<div class="btn trim vtrim">+</div>
+				<div class="btn trim vtrim up">+</div>
 				<div>0</div>
-				<div class="btn trim vtrim">-</div>
+				<div class="btn trim vtrim down">-</div>
 			</div>
 			<div class="cell left">
 				<div class="control-gimbal left">
@@ -57,10 +58,10 @@
 				</div>
 			</div>
 			<div class="cell center">
-				<button id="aux1" class="button">AUX1</button>
-				<button id="aux2" class="button">AUX2</button>
-				<button id="aux3" class="button">AUX3</button>
-				<button id="aux4" class="button">AUX4</button>
+				<button id="aux1" class="button center">AUX1</button>
+				<button id="aux2" class="button center">AUX2</button>
+				<button id="aux3" class="button center">AUX3</button>
+				<button id="aux4" class="button center">AUX4</button>
 			</div>
 			<div class="cell right">
 				<div class="control-gimbal right">
@@ -75,9 +76,9 @@
 				</div>
 			</div>
 			<div class="cell trim vtrim">
-				<div class="btn trim vtrim">+</div>
+				<div class="btn trim vtrim up">+</div>
 				<div>0</div>
-				<div class="btn trim vtrim">-</div>
+				<div class="btn trim vtrim down">-</div>
 			</div>
 		</div>
 	</div>
@@ -147,7 +148,7 @@
 		</div>
 		<div>
 			<strong>yaw deadband:</strong>
-			<input type="text" id="yawDeadband" placeholder="100" />
+			<input type="text" id="yawDeadband" placeholder="0.2" />
 		</div>
 		<div>
 			<strong>drone RX map:</strong>
@@ -169,6 +170,16 @@
 		</div>
 		<div>
 			<button id="saveConfig" class="button">Save</button>
+		</div>
+	</div>
+</div>
+
+<div id="adjustModal" class="modal">
+	<div class="modal-content">
+		<span class="close">&times;</span>
+		<div>
+			<button id="accCalibrationBtn" class="button">Acc_Calibration</button>
+			<button id="magCalibrationBtn" class="button">Mag_Calibration</button>
 		</div>
 	</div>
 </div>

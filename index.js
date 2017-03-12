@@ -151,6 +151,14 @@ console.log('onDocumentReady')
 
 	updateUI()
 
+	$(document).on('click', function(e){
+//		console.log(e.target, $(e.target).hasClass('modal'))
+		var target = $(e.target)
+		if(target.hasClass('modal')){
+			target.hide()
+		}
+	})
+
 	$('#connectModal span.close').on('click', function(e){
 		$('#connectModal').hide()
 	})
@@ -167,12 +175,19 @@ console.log('onDocumentReady')
 	$('#configicon').on('click', function(e){
 			$('#configModal').show()
 	})
-	$(document).on('click', function(e){
-//		console.log(e.target, $(e.target).hasClass('modal'))
-		var target = $(e.target)
-		if(target.hasClass('modal')){
-			target.hide()
-		}
+
+	$('#adjustModal span.close').on('click', function(e){
+		$('#adjustModal').hide()
+	})
+	$('#adjusticon').on('click', function(e){
+			$('#adjustModal').show()
+	})
+
+	$('#accCalibrationBtn').on('click', function(e){
+
+	})
+	$('#accCalibrationBtn').on('click', function(e){
+
 	})
 
 	$('#connectBtn').on('click', function(e){
@@ -209,7 +224,7 @@ console.log('onDocumentReady')
 		var maxAng = parseFloat($('#maxAng').val()) || 60
 		SAVE.maxAng = (maxAng < 10)? 10.0 : ( (maxAng > 85)? 85 : maxAng )
 
-		var yawDeadband = parseFloat($('#yawDeadband').val()) || 0.1
+		var yawDeadband = parseFloat($('#yawDeadband').val()) || 0.2
 		SAVE.yawDeadband = (yawDeadband < 0)? 0 : ( (yawDeadband > 0.95)? 0.95 : yawDeadband )
 
 		var rates = $('#rates').val().split(',')
