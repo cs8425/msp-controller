@@ -80,6 +80,7 @@ body {
 	padding: 10px 14px;
 /*	margin: 8px;*/
 	border: none;
+	cursor: pointer;
 }
 .htrim.left {
 	margin-right: 25%;
@@ -258,12 +259,22 @@ body {
 .armedicon {
 	background-image: url(images/icons/cf_icon_armed_grey.svg);
 }
+.armedicon.active {
+	background-image: url(images/icons/cf_icon_armed_active.svg);
+}
+
 .failsafeicon {
 	background-image: url(images/icons/cf_icon_failsafe_grey.svg);
 }
- 
+.failsafeicon.active {
+	background-image: url(images/icons/cf_icon_failsafe_active.svg);
+}
+
 .linkicon {
 	background-image: url(images/icons/cf_icon_link_grey.svg);
+}
+.linkicon.active {
+	background-image: url(images/icons/cf_icon_link_active.svg);
 }
 
 .configicon {

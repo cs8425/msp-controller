@@ -54,7 +54,7 @@ var STATUS = {
 	connected: false,
 	enableTX: false,
 	mode: [],
-	rate: 0.15,
+	rate: 0.3,
 	accOK: false,
 	accEn: false,
 	acc: [0,0,0],
@@ -72,10 +72,16 @@ var SAVE = {
 		[1100,1900],
 		[1100,1900]
 	],
-	rates: [0.15, 0.3, 0.6, 1.0],
+	rates: [0.3, 0.6, 1.0],
 	gyroCtrl: [0,0],
 	maxAng: 60,
-	yawDeadband: 100
+	yawDeadband: 0.2,
+	trim: {
+		A: 0,
+		E: 0,
+		R: 0,
+		T: 0
+	}
 }
 var transmitTimer = null;
 
@@ -99,6 +105,7 @@ document.addEventListener('deviceready', function(e){
 		document.addEventListener('resume', startAcc, false)
 	}
 }, false)
+document.addEventListener('pause', saveConfig, false)
 
 $(document).ready(function() {
 console.log('onDocumentReady')
@@ -173,21 +180,37 @@ console.log('onDocumentReady')
 		$('#configModal').hide()
 	})
 	$('#configicon').on('click', function(e){
-			$('#configModal').show()
+		$('#configModal').show()
 	})
 
 	$('#adjustModal span.close').on('click', function(e){
 		$('#adjustModal').hide()
 	})
 	$('#adjusticon').on('click', function(e){
-			$('#adjustModal').show()
+		$('#adjustModal').show()
 	})
 
 	$('#accCalibrationBtn').on('click', function(e){
-
+		if(STATUS.connected){
+			// TODO: some UI respone
+			MSP.send_message(MSPCodes.MSP_ACC_CALIBRATION, false, false)
+		}
 	})
-	$('#accCalibrationBtn').on('click', function(e){
-
+	$('#magCalibrationBtn').on('click', function(e){
+		if(STATUS.connected){
+			// TODO: some UI respone
+			MSP.send_message(MSPCodes.MSP_MAG_CALIBRATION, false, false)
+		}
+	})
+	$('#rstTrimBtn').on('click', function(e){
+		SAVE.trim = {
+			A: 0,
+			E: 0,
+			R: 0,
+			T: 0
+		}
+		saveConfig()
+		updateConfigUI()
 	})
 
 	$('#connectBtn').on('click', function(e){
@@ -200,7 +223,9 @@ console.log('onDocumentReady')
 				serial.connect(url, {bitrate: 115200}, onOpen)
 
 				SAVE.url = url
-				window.localStorage.setItem('SAVE', JSON.stringify(SAVE))
+				saveConfig()
+
+				// TODO: some UI respone when connecting
 				return
 			}
 		}
@@ -289,12 +314,35 @@ console.log('onDocumentReady')
 			})
 		})(i)
 	}
+
+	$('.btn.trim').on('click touchend', function(e){
+		if(('ontouchstart' in window) && (e.type == 'click')){
+			return false
+		}
+
+		var ctrlCh = SAVE.ctrlCh
+		var ele = $(this)
+		var mapto = parseInt(ele.attr('map'))
+		var val = SAVE.trim[ctrlCh[mapto]] += parseInt(ele.attr('adj'))
+		var ui = ele.parent().find('.trim.value')
+		ui.text(val)
+//		console.log('trim adj', ui, ctrlCh[mapto], SAVE.trim)
+	})
 })
 
 function loadConfig() {
 	var conf = JSON.parse(window.localStorage.getItem('SAVE'))
 	if(conf){
 		SAVE = conf
+	}
+
+	if(!SAVE.trim){
+		SAVE.trim = {
+			A: 0,
+			E: 0,
+			R: 0,
+			T: 0
+		}
 	}
 }
 
@@ -345,6 +393,14 @@ function updateConfigUI() {
 	for(var i=0; i<auxs.length; i++){
 		$(auxs[i]).val(SAVE.aux[i].join(','))
 	}
+
+	var ctrlCh = SAVE.ctrlCh
+	var trimValueUI = $('.trim.value')
+	for(var i=0; i<trimValueUI.length; i++){
+		var ele = $(trimValueUI[i])
+		var mapto = parseInt(ele.attr('map'))
+		ele.text(SAVE.trim[ctrlCh[mapto]])
+	}
 }
 
 function updateUI() {
@@ -373,13 +429,9 @@ function updateUI() {
 
 	var active = ((Date.now() - STATUS.last_received_timestamp) < 500);
 	if(active){
-		$(".linkicon").css({
-			'background-image': 'url(images/icons/cf_icon_link_active.svg)'
-		});
+		$(".linkicon").addClass('active')
 	}else{
-		$(".linkicon").css({
-			'background-image': 'url(images/icons/cf_icon_link_grey.svg)'
-		});
+		$(".linkicon").removeClass('active')
 	}
 
 	window.requestAnimationFrame(updateUI)
@@ -491,6 +543,11 @@ function transmitChannels() {
 			}
 			val += CHANNEL_MID_VALUE
 		}
+
+		if(SAVE.trim[stickName]){
+			val += SAVE.trim[stickName]
+		}
+
 		channelValues[channelMSPIndexes[stickName]] = val;
 	}
 
@@ -575,12 +632,14 @@ function onConnect() {
 
 function onClosed(result) {
 	if (result) { // All went as expected
-		console.log('connectionClosedOk');
+		console.log('connectionClosedOk')
 	} else { // Something went wrong
-		console.log('connectionClosedFail');
+		console.log('connectionClosedFail')
 	}
 
 	$('#rxicon').removeClass('active')
+	$(".armedicon").removeClass('active')
+	$(".failsafeicon").removeClass('active')
 	STATUS.connecting = false
 	STATUS.connected = false
 
@@ -607,23 +666,15 @@ function updateLiveStats() {
 		}
 		if (AUX_CONFIG[i] == 'ARM') {
 			if (bit_check(CONFIG.mode, i))
-				$(".armedicon").css({
-					'background-image': 'url(images/icons/cf_icon_armed_active.svg)'
-				});
+				$(".armedicon").addClass('active')
 			else
-				$(".armedicon").css({
-					'background-image': 'url(images/icons/cf_icon_armed_grey.svg)'
-				});
+				$(".armedicon").removeClass('active')
 		}
 		if (AUX_CONFIG[i] == 'FAILSAFE') {
 			if (bit_check(CONFIG.mode, i))
-				$(".failsafeicon").css({
-					'background-image': 'url(images/icons/cf_icon_failsafe_active.svg)'
-				});
+				$(".failsafeicon").addClass('active')
 			else
-				$(".failsafeicon").css({
-					'background-image': 'url(images/icons/cf_icon_failsafe_grey.svg)'
-				});
+				$(".failsafeicon").removeClass('active')
 		}
 	}
 	STATUS.mode = mode
@@ -643,9 +694,9 @@ function updateLiveStats() {
 
 	setTimeout(function(){
 		if(!STATUS.connected) return
-		MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false);
+		MSP.send_message(MSPCodes.MSP_BOXNAMES, false, false)
 		// BTFL >= "2.9.1"
-		MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats);
+		MSP.send_message(MSPCodes.MSP_STATUS_EX, false, false, updateLiveStats)
 		// else
 //		MSP.send_message(MSPCodes.MSP_STATUS, false, false);
 	}, 200)
