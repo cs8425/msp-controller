@@ -4,6 +4,8 @@
 ## Currently command go through TCP, might freeze if WiFi signal too weak.
 ## Use it carefully!!
 
+## Note: Betaflight@3.4.0+, Cleanflight@2.4.0+ remove 'RX_MSP' for all F3 board. You may need to flash older version or build a 'RX_MSP' enable version firmware to get this app works.
+
 ### Some Screenshots
 
 ![startup](https://raw.githubusercontent.com/cs8425/msp-controller/master/docs/screenshot001.png)
